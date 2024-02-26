@@ -20,7 +20,7 @@ class FeaturesConfig(BaseModel):
     features: Dict[str, FeatureSettings]
 
     @validator('features')
-    def _collection_must_not_be_empty(cls, features):
+    def _collection_must_not_be_empty(cls, features: Dict[str, FeatureSettings]):
         if not isinstance(features, Collection):
             raise ValueError('must be a collection')
         if len(features) == 0:
@@ -34,6 +34,12 @@ class FeaturesConfig(BaseModel):
         if target_column in features.keys():
             raise ValueError('the target column cannot be used as a feature as well')
         return values
+
+    def get_features_and_target_columns(self) -> tuple[str, ...]:
+        return (
+            self.target_column,
+            ...(feature_col for feature_col in self.features.keys()),
+        )
 
 
 if __name__ == '__main__':
