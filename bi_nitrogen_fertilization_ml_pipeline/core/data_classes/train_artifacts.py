@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 
@@ -20,9 +22,9 @@ OneHotEncodedFeatures = dict[str, OneHotEncodingMetadata]
 
 
 class DatasetPreprocessingArtifacts(BaseModel):
-    one_hot_encoded_features: OneHotEncodedFeatures
+    one_hot_encoded_features: OneHotEncodedFeatures = Field(default_factory=dict)
 
 
 class TrainArtifacts(BaseModel):
     features_config: FeaturesConfig
-    dataset_preprocessing: DatasetPreprocessingArtifacts
+    dataset_preprocessing: DatasetPreprocessingArtifacts = Field(default_factory=DatasetPreprocessingArtifacts)
