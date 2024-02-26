@@ -38,7 +38,7 @@ class FeaturesConfig(BaseModel):
     def get_features_and_target_columns(self) -> tuple[str, ...]:
         return (
             self.target_column,
-            ...(feature_col for feature_col in self.features.keys()),
+            *(feature_col for feature_col in self.features.keys()),
         )
 
 

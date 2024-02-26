@@ -1,4 +1,5 @@
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 
 
 class OneHotEncodingMetadata(BaseModel):
@@ -15,9 +16,13 @@ class OneHotEncodingMetadata(BaseModel):
     #             raise Exception(f"the category '{category}' is unknown") from ex
 
 
-class CategoricalFeatureEncoding(BaseModel):
-    one_hot_encoded_features: dict[str, OneHotEncodingMetadata]
+OneHotEncodedFeatures = dict[str, OneHotEncodingMetadata]
 
 
-class TrainingArtifacts(BaseModel):
-    pass
+class DatasetPreprocessingArtifacts(BaseModel):
+    one_hot_encoded_features: OneHotEncodedFeatures
+
+
+class TrainArtifacts(BaseModel):
+    features_config: FeaturesConfig
+    dataset_preprocessing: DatasetPreprocessingArtifacts

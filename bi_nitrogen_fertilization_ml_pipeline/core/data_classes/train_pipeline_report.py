@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -57,11 +58,14 @@ class CategoricalFeatureEncodingDetails(BaseModel):
         return categories_distribution
 
 
+CategoricalFeaturesEncodingDetails = dict[str, CategoricalFeatureEncodingDetails]
+
+
 class DatasetPreprocessing(BaseModel):
     original_dataset: Optional[pd.DataFrame]
     preprocessed_dataset: Optional[pd.DataFrame]
     imputation_funnel: Optional[ImputationFunnel]
-    categorical_features_encoding_details = Optional[dict[str, CategoricalFeatureEncodingDetails]]
+    categorical_features_encoding_details = Optional[CategoricalFeaturesEncodingDetails]
 
 
 class ReportWarning(BaseModel):
@@ -69,6 +73,8 @@ class ReportWarning(BaseModel):
     description: str
 
 
-class PipelineReport(BaseModel):
+class TrainPipelineReport(BaseModel):
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
+    pipeline_start_timestamp: Optional[datetime]
+    pipeline_end_timestamp: Optional[datetime]
     warnings: list[ReportWarning] = Field(default_factory=list)
