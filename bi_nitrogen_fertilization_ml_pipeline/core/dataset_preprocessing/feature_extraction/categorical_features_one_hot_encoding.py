@@ -178,12 +178,23 @@ def _transform_categorical_feature_one_hot_encoding(
     unknown_feature_col_categories =\
         actual_feature_categories - set(feature_encoding_metadata.get_known_categories())
     if any(unknown_feature_col_categories):
-        if
+        if for_inference and feature_encoding_metadata.allow_unknown_categories_during_inference:
+            feature_col = _map_categories_to_the_other_category(feature_col, unknown_feature_col_categories)
+        else:
+            raise AssertionError(
+                f"in the provided dataset, the feature column '{column}' contains categories that "
+                f"were not included during the model training phase. this isn't allowed in the "
+                f"current setup of this feature. the unknown categories are - {unknown_feature_col_categories}"
+            )
 
-    # _map_categories_to_the_other_category()
+    adjusted_feature_col = _map_categories_to_the_other_category(
+        feature_col, feature_encoding_metadata.categories_mapped_to_other)
 
-    
-    
+    categories_ordered_by_relative_offset = feature_encoding_metadata.categories_ordered_by_relative_offset
+    for category in (*categories_ordered_by_relative_offset, consts.ONE_HOT_OTHER_CATEGORY):
+        category_col_name = f'{column}_OHE__{category}'
+        dataset_df[category_col_name] = (adjusted_feature_col == category).astype(int)
+    dataset_df.drop(columns=[column], inplace=True)
 
 
 def _validate_column_contain_only_non_empty_strings(feature_col: pd.Series) -> None:

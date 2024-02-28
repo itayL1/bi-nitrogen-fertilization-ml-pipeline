@@ -3,7 +3,7 @@ import pandas as pd
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing.feature_extraction.categorical_features_one_hot_encoding import \
-    fit_categorical_features_one_hot_encoding
+    fit_categorical_features_one_hot_encoding, transform_categorical_features_one_hot_encoding
 
 
 def training_feature_extraction(
@@ -12,7 +12,12 @@ def training_feature_extraction(
 ) -> pd.DataFrame:
     ret_train_features_df = raw_train_dataset_df.copy()
 
-    fit_categorical_features_one_hot_encoding(ret_train_features_df, session_context)
+    fit_categorical_features_one_hot_encoding(
+        ret_train_features_df, session_context)
+    fitted_one_hot_encoded_features = session_context.artifacts.dataset_preprocessing.one_hot_encoded_features
+    transform_categorical_features_one_hot_encoding(
+        ret_train_features_df, fitted_one_hot_encoded_features, for_inference=False)
+
     return ret_train_features_df
 
 
