@@ -1,5 +1,5 @@
 def to_displayable_percentage(percentage_val: float) -> str:
-    return f'{round(percentage_val, 3)}%'
+    return f'{percentage_val:.2f}%'
 
 
 def to_displayable_percentage_distribution(

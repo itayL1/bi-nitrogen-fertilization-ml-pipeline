@@ -29,10 +29,11 @@ def fit_categorical_features_one_hot_encoding(
 def transform_categorical_features_one_hot_encoding(
     dataset_df: pd.DataFrame,
     one_hot_encoded_features: OneHotEncodedFeatures,
+    for_inference: bool,
 ) -> None:
     for feature_col, one_hot_encoding_metadata in one_hot_encoded_features.items():
         _transform_categorical_feature_one_hot_encoding(
-            dataset_df, feature_col, one_hot_encoding_metadata
+            dataset_df, feature_col, one_hot_encoding_metadata, for_inference,
         )
 
 
@@ -165,7 +166,8 @@ def _map_categories_to_the_other_category(
 def _transform_categorical_feature_one_hot_encoding(
     dataset_df: pd.DataFrame,
     column: str,
-    feature_encoding_metadata: OneHotEncodingMetadata
+    feature_encoding_metadata: OneHotEncodingMetadata,
+    for_inference: bool,
 ):
     assert column in dataset_df, \
         f"the feature column '{column}' is missing in the train dataset"
@@ -173,7 +175,11 @@ def _transform_categorical_feature_one_hot_encoding(
     _validate_column_contain_only_non_empty_strings(feature_col)
 
     actual_feature_categories = set(feature_col.unique())
-    unknown_feature_col_categories = actual_feature_categories - set(feature_encoding_metadata.)
+    unknown_feature_col_categories =\
+        actual_feature_categories - set(feature_encoding_metadata.get_known_categories())
+    if any(unknown_feature_col_categories):
+        if
+
     # _map_categories_to_the_other_category()
 
     
