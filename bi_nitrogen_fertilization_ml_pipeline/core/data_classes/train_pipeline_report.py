@@ -45,8 +45,14 @@ class OtherCategoryAggregationDetails(BaseModel):
         return aggregated_categories_distribution
 
 
+class FinalCategories(BaseModel):
+    count: int
+    values: list[str]
+
+
 class CategoricalFeatureEncodingDetails(BaseModel):
     encoding_method: CategoricalFeaturesEncodingMethod
+    final_categories: FinalCategories
     categories_distribution: dict[str, str]
     other_category_aggregation: OtherCategoryAggregationDetails
 
@@ -65,7 +71,11 @@ class DatasetPreprocessing(BaseModel):
     original_dataset: Optional[pd.DataFrame]
     preprocessed_dataset: Optional[pd.DataFrame]
     imputation_funnel: Optional[ImputationFunnel]
+    unused_dropped_columns_count: Optional[int]
     categorical_features_encoding_details: Optional[CategoricalFeaturesEncodingDetails] = Field(default_factory=dict)
+
+    def copy_without_large_members(self):
+        return self.copy(deep=True, exclude={'original_dataset', 'preprocessed_dataset'})
 
 
 class ReportWarning(BaseModel):
@@ -78,3 +88,9 @@ class TrainPipelineReport(BaseModel):
     pipeline_start_timestamp: Optional[datetime]
     pipeline_end_timestamp: Optional[datetime]
     warnings: list[ReportWarning] = Field(default_factory=list)
+
+    def copy_without_large_members(self):
+        ret_copy = self.copy(deep=True, exclude={'dataset_preprocessing'})
+        ret_copy.dataset_preprocessing = self.dataset_preprocessing.copy_without_large_members()
+        return ret_copy
+

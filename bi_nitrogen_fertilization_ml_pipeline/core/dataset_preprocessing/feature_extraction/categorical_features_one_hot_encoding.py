@@ -7,7 +7,8 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config imp
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import OneHotEncodingMetadata, \
     OneHotEncodedFeatures
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import \
-    OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod
+    OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod, \
+    FinalCategories
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage, \
     to_displayable_percentage_distribution
@@ -56,6 +57,10 @@ def _fit_one_hot_encoding_for_feature(
     final_categories_perc_distribution = _get_categories_perc_distribution(final_feature_col)
     report_encoding_details = CategoricalFeatureEncodingDetails(
         encoding_method=CategoricalFeaturesEncodingMethod.one_hot_encoding,
+        final_categories=FinalCategories(
+            count=len(final_categories),
+            values=sorted(final_categories),
+        ),
         categories_distribution=to_displayable_percentage_distribution(final_categories_perc_distribution),
         other_category_aggregation=report_other_category_aggregation_details,
     )

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
@@ -34,8 +35,8 @@ def test_dataset_preprocessing_e2e():
     preprocessed_train_dataset_df = dataset_preprocessing.train_dataset_preprocessing(
         raw_train_dataset_df, train_session_context)
     preprocessed_inference_dataset_df = dataset_preprocessing.inference_dataset_preprocessing(
-        raw_inference_dataset_df, training_artifacts=train_session_context.artifacts)
+        raw_inference_dataset_df, train_session_context.artifacts)
 
     # Assert
-    print(preprocessed_train_dataset_df.shape)
-    print(preprocessed_inference_dataset_df.shape)
+    xxx = train_session_context.pipeline_report.copy_without_large_members().json(ensure_ascii=False, indent=4)
+    print()
