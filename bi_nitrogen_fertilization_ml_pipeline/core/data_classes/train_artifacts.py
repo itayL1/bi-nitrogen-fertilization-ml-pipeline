@@ -5,8 +5,13 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config imp
 
 
 class OneHotEncodingMetadata(BaseModel):
-    OTHER_CATEGORY = 'other'
-    categories_ordered_by_relative_offset = list[str]
+    original_raw_categories: list[str]
+    categories_ordered_by_relative_offset: list[str]
+    categories_mapped_to_other: list[str]
+    allow_unknown_categories_during_inference: bool
+
+    def get_known_categories(self) -> list[str]:
+        return self.categories_ordered_by_relative_offset + self.categories_mapped_to_other
 
     # def get_category_offset(self, category: str) -> int:
     #     if category == self.OTHER_CATEGORY:

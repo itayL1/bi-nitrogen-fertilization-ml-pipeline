@@ -13,8 +13,7 @@ def train_dataset_preprocessing(
 ) -> tuple[pd.DataFrame, DatasetPreprocessingArtifacts]:
     preprocessed_dataset_df = raw_train_dataset_df.copy()
 
-    preprocessed_dataset_df = imputation_manager.train_dataset_imputation(
-        preprocessed_dataset_df, session_context)
+    imputation_manager.train_dataset_imputation(preprocessed_dataset_df, session_context)
 
     raise NotImplementedError
     return preprocessed_dataset_df

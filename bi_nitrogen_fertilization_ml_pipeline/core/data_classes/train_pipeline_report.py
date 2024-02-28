@@ -29,7 +29,7 @@ class CategoricalFeaturesEncodingMethod(str, Enum):
 
 class OtherCategoryAggregationDetails(BaseModel):
     total_percentage: str
-    aggregated_categories_threshold: str
+    min_significant_category: str
     aggregated_categories_distribution: dict[str, str]
 
     @validator('total_percentage')
