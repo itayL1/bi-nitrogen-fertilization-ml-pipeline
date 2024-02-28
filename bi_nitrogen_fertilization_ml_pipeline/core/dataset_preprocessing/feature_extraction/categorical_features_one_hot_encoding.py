@@ -28,10 +28,10 @@ def fit_categorical_features_one_hot_encoding(
 
 def transform_categorical_features_one_hot_encoding(
     dataset_df: pd.DataFrame,
-    one_hot_encoded_features: OneHotEncodedFeatures,
+    one_hot_encoded_features_artifacts: OneHotEncodedFeatures,
     for_inference: bool,
 ) -> None:
-    for feature_col, one_hot_encoding_metadata in one_hot_encoded_features.items():
+    for feature_col, one_hot_encoding_metadata in one_hot_encoded_features_artifacts.items():
         _transform_categorical_feature_one_hot_encoding(
             dataset_df, feature_col, one_hot_encoding_metadata, for_inference,
         )

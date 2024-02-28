@@ -7,22 +7,20 @@ from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing.feature_ex
 
 
 def training_feature_extraction(
-    raw_train_dataset_df: pd.DataFrame,
+    train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
-) -> pd.DataFrame:
-    ret_train_features_df = raw_train_dataset_df.copy()
-
+) -> None:
     fit_categorical_features_one_hot_encoding(
-        ret_train_features_df, session_context)
+        train_dataset_df, session_context)
     fitted_one_hot_encoded_features = session_context.artifacts.dataset_preprocessing.one_hot_encoded_features
     transform_categorical_features_one_hot_encoding(
-        ret_train_features_df, fitted_one_hot_encoded_features, for_inference=False)
-
-    return ret_train_features_df
+        train_dataset_df, fitted_one_hot_encoded_features, for_inference=False)
 
 
 def inference_feature_extraction(
-    raw_inference_dataset_df: pd.DataFrame,
+    inference_dataset_df: pd.DataFrame,
     training_artifacts: TrainArtifacts,
-) -> pd.DataFrame:
-    raise NotImplementedError
+) -> None:
+    one_hot_encoded_features_artifacts = training_artifacts.dataset_preprocessing.one_hot_encoded_features
+    transform_categorical_features_one_hot_encoding(
+        inference_dataset_df, one_hot_encoded_features_artifacts, for_inference=True)
