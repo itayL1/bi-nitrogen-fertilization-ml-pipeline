@@ -13,15 +13,6 @@ class OneHotEncodingMetadata(BaseModel):
     def get_known_categories(self) -> list[str]:
         return self.categories_ordered_by_relative_offset + self.categories_mapped_to_other
 
-    # def get_category_offset(self, category: str) -> int:
-    #     if category == self.OTHER_CATEGORY:
-    #         return len(self.categories_ordered_by_relative_offset)
-    #     else:
-    #         try:
-    #             return self.categories_ordered_by_relative_offset.index(category)
-    #         except ValueError as ex:
-    #             raise Exception(f"the category '{category}' is unknown") from ex
-
 
 OneHotEncodedFeatures = dict[str, OneHotEncodingMetadata]
 
@@ -33,3 +24,4 @@ class DatasetPreprocessingArtifacts(BaseModel):
 class TrainArtifacts(BaseModel):
     features_config: FeaturesConfig
     dataset_preprocessing: DatasetPreprocessingArtifacts = Field(default_factory=DatasetPreprocessingArtifacts)
+    is_fitted: bool = Field(default=False)

@@ -11,6 +11,9 @@ def train_dataset_preprocessing(
     raw_train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> pd.DataFrame:
+    assert not session_context.artifacts.is_fitted, \
+        "the provided train artifacts instance was fitted already, this isn't allowed."
+
     session_context.pipeline_report.dataset_preprocessing.original_dataset = raw_train_dataset_df.copy()
     preprocessed_train_dataset_df = raw_train_dataset_df.copy()
 
@@ -27,6 +30,7 @@ def train_dataset_preprocessing(
         for_inference=False,
     )
 
+    session_context.artifacts.is_fitted = True
     session_context.pipeline_report.dataset_preprocessing.preprocessed_dataset = preprocessed_train_dataset_df.copy()
     return preprocessed_train_dataset_df
 
@@ -35,6 +39,9 @@ def inference_dataset_preprocessing(
     raw_inference_dataset_df: pd.DataFrame,
     training_artifacts: TrainArtifacts,
 ) -> pd.DataFrame:
+    assert training_artifacts.is_fitted, \
+        "the provided train artifacts instance was not fitted, this isn't allowed."
+
     preprocessed_inference_dataset_df = raw_inference_dataset_df.copy()
 
     _remove_unused_columns_from_dataset(

@@ -1,7 +1,6 @@
 import pandas as pd
 
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts, \
-    DatasetPreprocessingArtifacts
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import DatasetPreprocessingArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing.feature_extraction.categorical_features_one_hot_encoding import \
     fit_categorical_features_one_hot_encoding, transform_categorical_features_one_hot_encoding
