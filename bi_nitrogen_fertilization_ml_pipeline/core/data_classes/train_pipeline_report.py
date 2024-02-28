@@ -65,7 +65,7 @@ class DatasetPreprocessing(BaseModel):
     original_dataset: Optional[pd.DataFrame]
     preprocessed_dataset: Optional[pd.DataFrame]
     imputation_funnel: Optional[ImputationFunnel]
-    categorical_features_encoding_details = Optional[CategoricalFeaturesEncodingDetails]
+    categorical_features_encoding_details: Optional[CategoricalFeaturesEncodingDetails] = Field(default_factory=dict)
 
 
 class ReportWarning(BaseModel):

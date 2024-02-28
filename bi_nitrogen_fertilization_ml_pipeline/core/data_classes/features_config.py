@@ -4,6 +4,7 @@ from typing import Collection, Any, Optional
 from pydantic import validator, root_validator, confloat, PositiveInt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
+from bi_nitrogen_fertilization_ml_pipeline.core.utils.collection_utils import find_duplicates
 
 
 class FeatureKinds(Enum):
@@ -39,11 +40,18 @@ class FeaturesConfig(BaseModel):
     features: list[FeatureSettings]
 
     @validator('features')
-    def _collection_must_not_be_empty(cls, features: dict[str, FeatureSettings]):
-        if not isinstance(features, Collection):
-            raise ValueError('must be a collection')
+    def _collection_must_not_be_empty(cls, features: list[FeatureSettings]):
         if len(features) == 0:
             raise ValueError('must not be empty')
+
+        features_with_duplicate_definitions =\
+            find_duplicates([feature.column for feature in features])
+        if any(features_with_duplicate_definitions):
+            raise ValueError(
+                f'features cannot have multiple definitions, but these '
+                f'features do - {features_with_duplicate_definitions}'
+            )
+
         return features
 
     @root_validator()

@@ -60,10 +60,8 @@ def _fit_one_hot_encoding_for_feature(
         other_category_aggregation=report_other_category_aggregation_details,
     )
     allow_unknown_categories_during_inference = nested_getattr(
-        feature_settings,
-        'one_hot_encoding_settings.allow_unknown_categories_during_inference',
-        defaults.ALLOW_UNKNOWN_CATEGORIES_DURING_INFERENCE,
-    )
+        feature_settings, 'one_hot_encoding_settings.allow_unknown_categories_during_inference', None,
+    ) or defaults.ALLOW_UNKNOWN_CATEGORIES_DURING_INFERENCE
     train_artifact_encoding_metadata = OneHotEncodingMetadata(
         original_raw_categories=sorted(original_raw_categories),
         categories_ordered_by_relative_offset=categories_ordered_by_relative_offset,
@@ -117,15 +115,12 @@ def _map_insignificant_categories_to_other_category(
     feature_settings: FeatureSettings,
 ) -> tuple[pd.Series, set[str], OtherCategoryAggregationDetails]:
     min_significant_category_frequency_percentage = nested_getattr(
-        feature_settings,
-        'one_hot_encoding_settings.min_significant_category_frequency_percentage',
-        defaults.MIN_SIGNIFICANT_CATEGORY_FREQUENCY_PERCENTAGE,
-    )
+        feature_settings, 'one_hot_encoding_settings.min_significant_category_frequency_percentage', None
+    ) or defaults.MIN_SIGNIFICANT_CATEGORY_FREQUENCY_PERCENTAGE
+
     max_allowed_categories_count = nested_getattr(
-        feature_settings,
-        'one_hot_encoding_settings.max_allowed_categories_count',
-        defaults.MAX_ALLOWED_CATEGORIES_COUNT_PER_FEATURE,
-    )
+        feature_settings, 'one_hot_encoding_settings.max_allowed_categories_count', None,
+    ) or defaults.MAX_ALLOWED_CATEGORIES_COUNT_PER_FEATURE
 
     raw_categories_perc_distribution_dict = _get_categories_perc_distribution(feature_col)
     insignificant_categories_perc_distribution = filter_dict(

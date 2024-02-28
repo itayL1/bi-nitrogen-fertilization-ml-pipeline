@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Collection
 
 
 def filter_dict(
@@ -18,3 +18,10 @@ def set_new_dict_entry(
     assert key not in dict_,\
         f"the provided key '{key}' already present in the provided dict"
     dict_[key] = val
+
+
+def find_duplicates(collection: list | tuple) -> set:
+    return {
+        item for item in collection
+        if collection.count(item) > 1
+    }
