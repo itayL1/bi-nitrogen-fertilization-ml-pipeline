@@ -4,7 +4,8 @@ import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
+    PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.model_training.user_input import parse_input_features_config, \
     validate_input_train_dataset
@@ -23,6 +24,8 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         pipeline_report=TrainPipelineReport(
-            pipeline_start_timestamp=datetime.now(),
+            pipeline_execution_time=PipelineExecutionTime(
+                pipeline_start_timestamp=datetime.now(),
+            )
         )
     )

@@ -2,25 +2,51 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
+import humanize
 import pandas as pd
 from pydantic import Field, validator
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 
 
-def _validate_percentage_str(value: str) -> None:
+def _validate_percentage_str(value: str, validate_between_0_and_100: bool) -> None:
     if not value.endswith('%'):
         raise ValueError(f"the percentage string '{value}' must end with '%'")
+
+    actual_percentage_value = float(value.rstrip('%'))
+    if validate_between_0_and_100:
+        if not 0 <= actual_percentage_value <= 100:
+            raise ValueError(f"the percentage string '{value}' must be between 0 and 100")
 
 
 def _validate_percentage_distribution_dict(percentage_distribution: dict[str, str]) -> None:
     for perc_val in percentage_distribution.values():
-        _validate_percentage_str(perc_val)
+        _validate_percentage_str(perc_val, validate_between_0_and_100=True)
+
+
+class PipelineExecutionTime(BaseModel):
+    duration: Optional[str]
+    pipeline_start_timestamp: Optional[datetime]
+    pipeline_end_timestamp: Optional[datetime]
+
+    def populate_duration_field(self) -> None:
+        assert self.pipeline_start_timestamp is not None
+        assert self.pipeline_end_timestamp is not None
+        assert self.duration is None, 'the duration field is already populated'
+        self.duration = humanize.precisedelta(
+            self.pipeline_start_timestamp - self.pipeline_end_timestamp
+        )
 
 
 class ImputationFunnel(BaseModel):
+    remaining_rows_percentage: str
     rows_count_before_imputation: int
     rows_count_after_imputation: int
+
+    @validator('remaining_rows_percentage')
+    def _total_percentage_validator(cls, remaining_rows_percentage: str) -> str:
+        _validate_percentage_str(remaining_rows_percentage, validate_between_0_and_100=True)
+        return remaining_rows_percentage
 
 
 class CategoricalFeaturesEncodingMethod(str, Enum):
@@ -34,7 +60,7 @@ class OtherCategoryAggregationDetails(BaseModel):
 
     @validator('total_percentage')
     def _total_percentage_validator(cls, total_percentage: str) -> str:
-        _validate_percentage_str(total_percentage)
+        _validate_percentage_str(total_percentage, validate_between_0_and_100=True)
         return total_percentage
 
     @validator('aggregated_categories_distribution')
@@ -84,9 +110,8 @@ class ReportWarning(BaseModel):
 
 
 class TrainPipelineReport(BaseModel):
+    pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
-    pipeline_start_timestamp: Optional[datetime]
-    pipeline_end_timestamp: Optional[datetime]
     warnings: list[ReportWarning] = Field(default_factory=list)
 
     def copy_without_large_members(self):

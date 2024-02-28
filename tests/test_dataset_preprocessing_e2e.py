@@ -3,7 +3,8 @@ from datetime import datetime
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
+    PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
@@ -17,8 +18,11 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         pipeline_report=TrainPipelineReport(
-            pipeline_start_timestamp=datetime.now(),
-        )
+            pipeline_execution_time=PipelineExecutionTime(
+
+                pipeline_start_timestamp=datetime.now(),
+            ),
+        ),
     )
 
 
@@ -38,5 +42,11 @@ def test_dataset_preprocessing_e2e():
         raw_inference_dataset_df, train_session_context.artifacts)
 
     # Assert
-    xxx = train_session_context.pipeline_report.copy_without_large_members().json(ensure_ascii=False, indent=4)
-    print()
+    pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time
+    pipeline_execution_time.pipeline_end_timestamp = datetime.now()
+    pipeline_execution_time.populate_duration_field()
+
+    train_pipeline_report_dump =\
+        train_session_context.pipeline_report.copy_without_large_members().json(ensure_ascii=False, indent=4)
+    with open('train_pipeline_report.json', 'w') as f:
+        f.write(train_pipeline_report_dump)

@@ -3,6 +3,7 @@ import pandas as pd
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import ImputationFunnel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
+from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage
 
 
 def train_dataset_imputation(
@@ -12,11 +13,14 @@ def train_dataset_imputation(
     features_config = session_context.artifacts.features_config
 
     rows_count_before_imputation = train_dataset_df.shape[0]
-    train_dataset_df.replace('', None).dropna(
+    train_dataset_df.replace('', None, inplace=True)
+    train_dataset_df.dropna(
         subset=list(features_config.get_features_and_target_columns()), inplace=True)
     rows_count_after_imputation = train_dataset_df.shape[0]
 
+    remaining_rows_percentage = (rows_count_after_imputation / rows_count_before_imputation) * 100
     session_context.pipeline_report.dataset_preprocessing.imputation_funnel = ImputationFunnel(
+        remaining_rows_percentage=to_displayable_percentage(remaining_rows_percentage),
         rows_count_before_imputation=rows_count_before_imputation,
         rows_count_after_imputation=rows_count_after_imputation,
     )
