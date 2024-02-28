@@ -1,0 +1,1 @@
+ONE_HOT_OTHER_CATEGORY = '__other__'
