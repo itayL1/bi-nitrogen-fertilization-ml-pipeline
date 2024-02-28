@@ -104,9 +104,15 @@ class DatasetPreprocessing(BaseModel):
         return self.copy(deep=True, exclude={'original_dataset', 'preprocessed_dataset'})
 
 
+class PipelineModules(str, Enum):
+    dataset_preprocessing = 'dataset_preprocessing'
+    model_training = 'model_training'
+
+
 class ReportWarning(BaseModel):
-    title: str
+    pipeline_module: PipelineModules
     description: str
+    context: Optional[dict]
 
 
 class TrainPipelineReport(BaseModel):
@@ -118,4 +124,14 @@ class TrainPipelineReport(BaseModel):
         ret_copy = self.copy(deep=True, exclude={'dataset_preprocessing'})
         ret_copy.dataset_preprocessing = self.dataset_preprocessing.copy_without_large_members()
         return ret_copy
+
+    def add_warning(
+        self, pipeline_module: PipelineModules,
+        description: str, context: Optional[dict] = None,
+    ) -> None:
+        self.warnings.append(ReportWarning(
+            pipeline_module=pipeline_module,
+            description=description,
+            context=context,
+        ))
 

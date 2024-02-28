@@ -1,3 +1,4 @@
+import math
 from typing import Collection
 
 import pandas as pd
@@ -8,7 +9,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts imp
     OneHotEncodedFeatures
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import \
     OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod, \
-    FinalCategories
+    FinalCategories, PipelineModules, TrainPipelineReport
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage, \
     to_displayable_percentage_distribution
@@ -47,9 +48,17 @@ def _fit_one_hot_encoding_for_feature(
 
     original_raw_categories = set(feature_col.unique())
     _validate_original_categories(feature_settings, original_raw_categories)
+    (
+        min_significant_category_frequency_percentage,
+        max_allowed_categories_count,
+        allow_unknown_categories_during_inference,
+    ) = _extract_feature_one_hot_encoding_settings(feature_settings)
 
-    final_feature_col, insignificant_categories, report_other_category_aggregation_details =\
-        _map_insignificant_categories_to_other_category(feature_col, feature_settings)
+    (
+        final_feature_col, insignificant_categories, report_other_category_aggregation_details,
+    ) = _map_insignificant_categories_to_other_category(
+        feature_col, min_significant_category_frequency_percentage, max_allowed_categories_count,
+    )
 
     final_categories = set(final_feature_col.unique())
     categories_ordered_by_relative_offset = sorted(final_categories)
@@ -64,9 +73,6 @@ def _fit_one_hot_encoding_for_feature(
         categories_distribution=to_displayable_percentage_distribution(final_categories_perc_distribution),
         other_category_aggregation=report_other_category_aggregation_details,
     )
-    allow_unknown_categories_during_inference = nested_getattr(
-        feature_settings, 'one_hot_encoding_settings.allow_unknown_categories_during_inference', None,
-    ) or defaults.ALLOW_UNKNOWN_CATEGORIES_DURING_INFERENCE
     train_artifact_encoding_metadata = OneHotEncodingMetadata(
         original_raw_categories=sorted(original_raw_categories),
         categories_ordered_by_relative_offset=categories_ordered_by_relative_offset,
@@ -81,6 +87,12 @@ def _fit_one_hot_encoding_for_feature(
     set_new_dict_entry(
         session_context.pipeline_report.dataset_preprocessing.categorical_features_encoding_details,
         key=feature_settings.column, val=report_encoding_details,
+    )
+
+    _add_report_warnings_regarding_encoding_if_needed(
+        feature_settings, final_categories, final_categories_perc_distribution,
+        max_allowed_categories_count, min_significant_category_frequency_percentage,
+        report_encoding_details, session_context.pipeline_report,
     )
 
 
@@ -115,18 +127,37 @@ def _validate_original_categories(
             f"found in multiple forms of upper/lowe cases, which is invalid"
 
 
+def _extract_feature_one_hot_encoding_settings(
+    feature_settings: FeatureSettings,
+) -> tuple[float, int, bool]:
+    min_significant_category_frequency_percentage = nested_getattr(
+        feature_settings,
+        'one_hot_encoding_settings.min_significant_category_frequency_percentage',
+        None,
+    ) or defaults.MIN_SIGNIFICANT_CATEGORY_FREQUENCY_PERCENTAGE
+    max_allowed_categories_count = nested_getattr(
+        feature_settings,
+        'one_hot_encoding_settings.max_allowed_categories_count',
+        None,
+    ) or defaults.MAX_ALLOWED_CATEGORIES_COUNT_PER_FEATURE
+    allow_unknown_categories_during_inference = nested_getattr(
+        feature_settings,
+        'one_hot_encoding_settings.allow_unknown_categories_during_inference',
+        None,
+    ) or defaults.ALLOW_UNKNOWN_CATEGORIES_DURING_INFERENCE
+
+    return (
+        min_significant_category_frequency_percentage,
+        max_allowed_categories_count,
+        allow_unknown_categories_during_inference,
+    )
+
+
 def _map_insignificant_categories_to_other_category(
     feature_col: pd.Series,
-    feature_settings: FeatureSettings,
+    min_significant_category_frequency_percentage: float,
+    max_allowed_categories_count: int,
 ) -> tuple[pd.Series, set[str], OtherCategoryAggregationDetails]:
-    min_significant_category_frequency_percentage = nested_getattr(
-        feature_settings, 'one_hot_encoding_settings.min_significant_category_frequency_percentage', None
-    ) or defaults.MIN_SIGNIFICANT_CATEGORY_FREQUENCY_PERCENTAGE
-
-    max_allowed_categories_count = nested_getattr(
-        feature_settings, 'one_hot_encoding_settings.max_allowed_categories_count', None,
-    ) or defaults.MAX_ALLOWED_CATEGORIES_COUNT_PER_FEATURE
-
     raw_categories_perc_distribution_dict = _get_categories_perc_distribution(feature_col)
     insignificant_categories_perc_distribution = filter_dict(
         raw_categories_perc_distribution_dict,
@@ -216,3 +247,51 @@ def _filter_features_by_kind(
         feature for feature in features
         if feature.kind == kind
     )
+
+
+def _add_report_warnings_regarding_encoding_if_needed(
+    feature_settings: FeatureSettings,
+    final_categories: set[str],
+    final_categories_perc_distribution: dict[str, float],
+    max_allowed_categories_count: int,
+    min_significant_category_frequency_percentage: float,
+    report_encoding_details: CategoricalFeatureEncodingDetails,
+    pipeline_report: TrainPipelineReport,
+) -> None:
+    base_warnings_context = {
+        'feature_column': feature_settings.column,
+    }
+
+    categories_count_warning_threshold = math.ceil(max_allowed_categories_count * 2 / 3)
+    if report_encoding_details.final_categories.count >= categories_count_warning_threshold:
+        pipeline_report.add_warning(
+            PipelineModules.dataset_preprocessing,
+            f"the number of categories in this feature is {report_encoding_details.final_categories.count}, "
+            f"which is relatively high and approaches the limit for this feature",
+            context={
+                'feature.max_allowed_categories_count': max_allowed_categories_count,
+                **base_warnings_context,
+            },
+        )
+
+    other_category_frequency_percentage = \
+        final_categories_perc_distribution.get(consts.ONE_HOT_OTHER_CATEGORY, 0)
+    if other_category_frequency_percentage > 10:
+        pipeline_report.add_warning(
+            PipelineModules.dataset_preprocessing,
+            f"the percentage of the 'others' category in this feature is "
+            f"{to_displayable_percentage(other_category_frequency_percentage)}, which is relatively high",
+            context=base_warnings_context,
+        )
+
+    categories_without_other = final_categories - {consts.ONE_HOT_OTHER_CATEGORY}
+    if len(categories_without_other) < 2:
+        pipeline_report.add_warning(
+            PipelineModules.dataset_preprocessing,
+            f"there is no diversity in the categories of this features, when counting out the 'others' category. "
+            f"consider changing the value of min_significant_category_frequency_percentage for this feature.",
+            context={
+                'feature.min_significant_category_frequency_percentage': min_significant_category_frequency_percentage,
+                **base_warnings_context,
+            },
+        )
