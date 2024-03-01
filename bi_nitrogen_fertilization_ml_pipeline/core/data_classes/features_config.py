@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Collection, Any, Optional
+from typing import Collection, Any, Optional, Callable
 
 from pydantic import validator, root_validator, confloat, PositiveInt
 
@@ -35,8 +35,14 @@ class FeatureSettings(BaseModel):
         return values
 
 
+class EvaluationFoldsKeySettings(BaseModel):
+    column: str
+    values_mapper: Optional[Callable[[str], str]]
+
+
 class FeaturesConfig(BaseModel):
     target_column: str
+    evaluation_folds_key: EvaluationFoldsKeySettings
     features: list[FeatureSettings]
 
     @validator('features')
@@ -66,31 +72,9 @@ class FeaturesConfig(BaseModel):
             raise ValueError('the target column cannot be used as a feature as well')
         return values
 
-    def get_features_and_target_columns(self) -> tuple[str, ...]:
+    def get_all_columns(self) -> tuple[str, ...]:
         return (
             self.target_column,
+            self.evaluation_folds_key.column,
             *(feature.column for feature in self.features),
         )
-
-
-if __name__ == '__main__':
-    FeaturesConfig.parse_obj(dict(
-        target_column='a',
-        features=[
-            # dict(
-            #     column='a',
-            #     kind='numeric',
-            # ),
-            dict(
-                column='b',
-                kind='categorical',
-                one_hot_encoding_settings=dict(
-
-                ),
-            ),
-            dict(
-                column='c',
-                kind='numeric',
-            )
-        ],
-    ))

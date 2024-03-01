@@ -28,17 +28,6 @@ def fit_categorical_features_one_hot_encoding(
         _fit_one_hot_encoding_for_feature(train_dataset_df, feature_settings, session_context)
 
 
-def transform_categorical_features_one_hot_encoding(
-    dataset_df: pd.DataFrame,
-    one_hot_encoded_features_artifacts: OneHotEncodedFeatures,
-    for_inference: bool,
-) -> None:
-    for feature_col, one_hot_encoding_metadata in one_hot_encoded_features_artifacts.items():
-        _transform_categorical_feature_one_hot_encoding(
-            dataset_df, feature_col, one_hot_encoding_metadata, for_inference,
-        )
-
-
 def _fit_one_hot_encoding_for_feature(
     train_dataset_df: pd.DataFrame,
     feature_settings: FeatureSettings,
@@ -194,15 +183,12 @@ def _map_categories_to_the_other_category(
     )
 
 
-def _transform_categorical_feature_one_hot_encoding(
-    dataset_df: pd.DataFrame,
-    column: str,
+def transform_categorical_feature_one_hot_encoding(
+    feature_col: pd.Series,
+    feature_col_name: str,
     feature_encoding_metadata: OneHotEncodingMetadata,
     for_inference: bool,
-):
-    assert column in dataset_df, \
-        f"the feature column '{column}' is missing in the train dataset"
-    feature_col = dataset_df[column]
+) -> pd.DataFrame:
     _validate_column_contain_only_non_empty_strings(feature_col)
 
     actual_feature_categories = set(feature_col.unique())
@@ -213,7 +199,7 @@ def _transform_categorical_feature_one_hot_encoding(
             feature_col = _map_categories_to_the_other_category(feature_col, unknown_feature_col_categories)
         else:
             raise AssertionError(
-                f"in the provided dataset, the feature column '{column}' contains categories that "
+                f"in the provided dataset, the feature column '{feature_col_name}' contains categories that "
                 f"were not included during the model training phase. this isn't allowed in the "
                 f"current setup of this feature. the unknown categories are - {unknown_feature_col_categories}"
             )
@@ -222,10 +208,14 @@ def _transform_categorical_feature_one_hot_encoding(
         feature_col, feature_encoding_metadata.categories_mapped_to_other)
 
     categories_ordered_by_relative_offset = feature_encoding_metadata.categories_ordered_by_relative_offset
+
+    category_col_name_to_series = dict()
     for category in (*categories_ordered_by_relative_offset, consts.ONE_HOT_OTHER_CATEGORY):
-        category_col_name = f'{column}_OHE__{category}'
-        dataset_df[category_col_name] = (adjusted_feature_col == category).astype(int)
-    dataset_df.drop(columns=[column], inplace=True)
+        category_col_name = f'{feature_col_name}_OHE__{category}'
+        category_col_name_to_series[category_col_name] = (adjusted_feature_col == category).astype(int)
+
+    one_hot_encoded_feature_df = pd.DataFrame(data=category_col_name_to_series)
+    return one_hot_encoded_feature_df
 
 
 def _validate_column_contain_only_non_empty_strings(feature_col: pd.Series) -> None:

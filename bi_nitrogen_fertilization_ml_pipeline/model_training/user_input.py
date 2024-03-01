@@ -38,7 +38,7 @@ def _validate_input_train_dataset_aligned_with_features_config(
     features_config: FeaturesConfig,
 ) -> None:
     train_dataset_columns = set(raw_train_dataset_df.columns)
-    features_config_columns = set(features_config.get_features_and_target_columns())
+    features_config_columns = set(features_config.get_all_columns())
     feature_columns_missing_in_actual_train_dataset = train_dataset_columns - features_config_columns
     if any(feature_columns_missing_in_actual_train_dataset):
         raise invalid_input_train_dataset_error(

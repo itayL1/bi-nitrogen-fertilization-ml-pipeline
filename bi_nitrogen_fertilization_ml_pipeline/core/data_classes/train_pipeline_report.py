@@ -7,21 +7,8 @@ import pandas as pd
 from pydantic import Field, validator
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
-
-
-def _validate_percentage_str(value: str, validate_between_0_and_100: bool) -> None:
-    if not value.endswith('%'):
-        raise ValueError(f"the percentage string '{value}' must end with '%'")
-
-    actual_percentage_value = float(value.rstrip('%'))
-    if validate_between_0_and_100:
-        if not 0 <= actual_percentage_value <= 100:
-            raise ValueError(f"the percentage string '{value}' must be between 0 and 100")
-
-
-def _validate_percentage_distribution_dict(percentage_distribution: dict[str, str]) -> None:
-    for perc_val in percentage_distribution.values():
-        _validate_percentage_str(perc_val, validate_between_0_and_100=True)
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.validations import validate_percentage_str, \
+    validate_percentage_distribution_dict, validate_dataframe_has_2_dimensions
 
 
 class PipelineExecutionTime(BaseModel):
@@ -45,7 +32,7 @@ class ImputationFunnel(BaseModel):
 
     @validator('remaining_rows_percentage')
     def _total_percentage_validator(cls, remaining_rows_percentage: str) -> str:
-        _validate_percentage_str(remaining_rows_percentage, validate_between_0_and_100=True)
+        validate_percentage_str(remaining_rows_percentage, validate_between_0_and_100=True)
         return remaining_rows_percentage
 
 
@@ -60,14 +47,14 @@ class OtherCategoryAggregationDetails(BaseModel):
 
     @validator('total_percentage')
     def _total_percentage_validator(cls, total_percentage: str) -> str:
-        _validate_percentage_str(total_percentage, validate_between_0_and_100=True)
+        validate_percentage_str(total_percentage, validate_between_0_and_100=True)
         return total_percentage
 
     @validator('aggregated_categories_distribution')
     def _aggregated_categories_distribution(
         cls, aggregated_categories_distribution: dict[str, str],
     ) -> dict[str, str]:
-        _validate_percentage_distribution_dict(aggregated_categories_distribution)
+        validate_percentage_distribution_dict(aggregated_categories_distribution)
         return aggregated_categories_distribution
 
 
@@ -86,7 +73,7 @@ class CategoricalFeatureEncodingDetails(BaseModel):
     def _aggregated_categories_distribution(
         cls, categories_distribution: dict[str, str],
     ) -> dict[str, str]:
-        _validate_percentage_distribution_dict(categories_distribution)
+        validate_percentage_distribution_dict(categories_distribution)
         return categories_distribution
 
 
@@ -103,6 +90,24 @@ class DatasetPreprocessing(BaseModel):
     def copy_without_large_members(self):
         return self.copy(deep=True, exclude={'original_dataset', 'preprocessed_dataset'})
 
+    @validator('original_dataset')
+    def _validate_original_dataset_has_2_dimensions(
+        cls, original_dataset: Optional[pd.DataFrame],
+    ) -> Optional[pd.DataFrame]:
+        validate_dataframe_has_2_dimensions(original_dataset)
+        return original_dataset
+
+    @validator('preprocessed_dataset')
+    def _validate_preprocessed_dataset_has_2_dimensions(
+        cls, preprocessed_dataset: Optional[pd.DataFrame],
+    ) -> Optional[pd.DataFrame]:
+        validate_dataframe_has_2_dimensions(preprocessed_dataset)
+        return preprocessed_dataset
+
+
+class ModelTraining(BaseModel):
+    random_seed: Optional[int]
+
 
 class PipelineModules(str, Enum):
     dataset_preprocessing = 'dataset_preprocessing'
@@ -118,6 +123,7 @@ class ReportWarning(BaseModel):
 class TrainPipelineReport(BaseModel):
     pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
+    model_training: ModelTraining = Field(default_factory=ModelTraining)
     warnings: list[ReportWarning] = Field(default_factory=list)
 
     def copy_without_large_members(self):
@@ -134,4 +140,3 @@ class TrainPipelineReport(BaseModel):
             description=description,
             context=context,
         ))
-
