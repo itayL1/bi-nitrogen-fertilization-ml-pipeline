@@ -23,11 +23,13 @@ def train_dataset_preprocessing(
 
     imputation_manager.train_dataset_imputation(raw_train_dataset_df, session_context)
     feature_extraction.fit_train_feature_extraction_artifacts(raw_train_dataset_df, session_context)
+
     X = feature_extraction.extract_features(
-        raw_train_dataset_df, session_context.artifacts, for_inference=False,
-    )
-    y = feature_extraction.extract_train_target(raw_train_dataset_df, session_context.artifacts)
-    evaluation_folds_key_col = feature_extraction.extract_evaluation_folds_key(raw_train_dataset_df, session_context.artifacts)
+        raw_train_dataset_df, session_context.artifacts, for_inference=False)
+    y = feature_extraction.extract_train_target(
+        raw_train_dataset_df, session_context.artifacts)
+    evaluation_folds_key_col = feature_extraction.extract_evaluation_folds_key(
+        raw_train_dataset_df, session_context.artifacts)
 
     preprocessed_dataset = PreprocessedTrainDataset(X=X, y=y, evaluation_folds_key_col=evaluation_folds_key_col)
     session_context.pipeline_report.dataset_preprocessing.preprocessed_dataset =\
@@ -52,8 +54,7 @@ def inference_dataset_preprocessing(
     imputation_manager.inference_dataset_validation(
         raw_inference_dataset_df, training_artifacts)
     X = feature_extraction.extract_features(
-        raw_inference_dataset_df, training_artifacts, for_inference=True,
-    )
+        raw_inference_dataset_df, training_artifacts, for_inference=True)
     return PreprocessedInferenceDataset(X=X)
 
 
