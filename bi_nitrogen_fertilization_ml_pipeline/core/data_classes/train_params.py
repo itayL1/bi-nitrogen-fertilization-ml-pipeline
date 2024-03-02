@@ -10,7 +10,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import 
 
 
 class TrainEarlyStoppingSettings(BaseModel):
-    validation_set_portion_size = confloat(ge=0.0, lt=1.0)
+    validation_set_fraction_size = confloat(ge=0.0, lt=1.0)
     tolerance_epochs_count = PositiveInt
 
 

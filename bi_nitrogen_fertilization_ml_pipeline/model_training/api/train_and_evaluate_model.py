@@ -8,7 +8,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
-from bi_nitrogen_fertilization_ml_pipeline.model_training.user_input import parse_input_features_config, \
+from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import parse_input_features_config, \
     validate_input_train_dataset, parse_input_train_params
 
 
