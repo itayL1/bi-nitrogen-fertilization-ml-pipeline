@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import Collection, Any, Optional
+from typing import Any, Optional
 
 from pydantic import validator, root_validator, confloat, PositiveInt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import not_empty_str
 from bi_nitrogen_fertilization_ml_pipeline.core.utils.collection_utils import find_duplicates
 
 
@@ -13,13 +14,13 @@ class FeatureKinds(Enum):
 
 
 class OneHotEncodingSettings(BaseModel):
-    min_significant_category_frequency_percentage: Optional[confloat(gt=0, lt=100)]
+    min_significant_category_percentage_threshold: Optional[confloat(gt=0, lt=100)]
     max_allowed_categories_count: Optional[PositiveInt]
     allow_unknown_categories_during_inference: Optional[bool]
 
 
 class FeatureSettings(BaseModel):
-    column: str
+    column: not_empty_str
     kind: FeatureKinds
     one_hot_encoding_settings: Optional[OneHotEncodingSettings]
 
@@ -36,7 +37,7 @@ class FeatureSettings(BaseModel):
 
 
 class FeaturesConfig(BaseModel):
-    target_column: str
+    target_column: not_empty_str
     features: list[FeatureSettings]
 
     @validator('features')
@@ -66,31 +67,5 @@ class FeaturesConfig(BaseModel):
             raise ValueError('the target column cannot be used as a feature as well')
         return values
 
-    def get_features_and_target_columns(self) -> tuple[str, ...]:
-        return (
-            self.target_column,
-            *(feature.column for feature in self.features),
-        )
-
-
-if __name__ == '__main__':
-    FeaturesConfig.parse_obj(dict(
-        target_column='a',
-        features=[
-            # dict(
-            #     column='a',
-            #     kind='numeric',
-            # ),
-            dict(
-                column='b',
-                kind='categorical',
-                one_hot_encoding_settings=dict(
-
-                ),
-            ),
-            dict(
-                column='c',
-                kind='numeric',
-            )
-        ],
-    ))
+    def get_feature_columns(self) -> tuple[str, ...]:
+        return tuple(feature.column for feature in self.features)

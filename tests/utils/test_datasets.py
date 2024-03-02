@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig, FeatureSettings, \
-    FeatureKinds, OneHotEncodingSettings
+    FeatureKinds
 
 
 def load_Nitrogen_with_Era5_and_NDVI_dataset() -> pd.DataFrame:
