@@ -11,12 +11,10 @@ def train_dataset_imputation(
     train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> None:
-    features_config = session_context.artifacts.features_config
-
     rows_count_before_imputation = train_dataset_df.shape[0]
     train_dataset_df.replace('', None, inplace=True)
     train_dataset_df.dropna(
-        subset=list(features_config.get_all_columns()), inplace=True)
+        subset=list(session_context.get_required_columns_for_training()), inplace=True)
     rows_count_after_imputation = train_dataset_df.shape[0]
 
     remaining_rows_percentage = (rows_count_after_imputation / rows_count_before_imputation) * 100
@@ -41,7 +39,7 @@ def inference_dataset_validation(
     features_config = training_artifacts.features_config
 
     inference_dataset_relevant_columns_df = inference_dataset_df[
-        list(features_config.get_all_columns())
+        list(features_config.get_feature_columns())
     ]
     required_columns_with_empty_values = _find_columns_with_empty_values(
         inference_dataset_relevant_columns_df)

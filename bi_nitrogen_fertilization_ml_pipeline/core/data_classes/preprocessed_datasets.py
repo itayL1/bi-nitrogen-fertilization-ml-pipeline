@@ -4,7 +4,7 @@ import pandas as pd
 from pydantic import validator
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.validations import validate_dataframe_has_2_dimensions
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import validate_dataframe_has_2_dimensions
 
 
 class PreprocessedTrainDataset(BaseModel):

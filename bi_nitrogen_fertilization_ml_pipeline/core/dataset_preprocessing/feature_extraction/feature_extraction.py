@@ -2,6 +2,7 @@ import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeatureKinds
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing.feature_extraction.categorical_features_one_hot_encoding import \
     fit_categorical_features_one_hot_encoding, transform_categorical_feature_one_hot_encoding
@@ -45,9 +46,9 @@ def extract_train_target(
 
 def extract_evaluation_folds_key(
     raw_train_dataset_df: pd.DataFrame,
-    train_artifacts: TrainArtifacts,
+    train_params: TrainParams,
 ) -> pd.Series:
-    evaluation_folds_key_settings = train_artifacts.features_config.evaluation_folds_key
+    evaluation_folds_key_settings = train_params.evaluation_folds_key
     validate_dataframe_has_column(raw_train_dataset_df, evaluation_folds_key_settings.column)
 
     evaluation_folds_key_col = raw_train_dataset_df[evaluation_folds_key_settings.column].copy()

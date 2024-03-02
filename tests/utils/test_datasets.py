@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig, FeatureSettings, \
-    FeatureKinds, OneHotEncodingSettings, EvaluationFoldsKeySettings
+    FeatureKinds
 
 
 def load_Nitrogen_with_Era5_and_NDVI_dataset() -> pd.DataFrame:
@@ -23,7 +23,6 @@ def load_Nitrogen_with_Era5_and_NDVI_dataset() -> pd.DataFrame:
 def default_Nitrogen_with_Era5_and_NDVI_dataset_features_config() -> FeaturesConfig:
     return FeaturesConfig(
         target_column='N kg/d',
-        evaluation_folds_key=EvaluationFoldsKeySettings(column='year'),
         features=[
             FeatureSettings(
                 column='משק',

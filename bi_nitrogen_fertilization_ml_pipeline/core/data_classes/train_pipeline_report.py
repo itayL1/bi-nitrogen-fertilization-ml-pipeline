@@ -7,7 +7,7 @@ import pandas as pd
 from pydantic import Field, validator
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.validations import validate_percentage_str, \
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import validate_percentage_str, \
     validate_percentage_distribution_dict, validate_dataframe_has_2_dimensions
 
 
@@ -42,7 +42,7 @@ class CategoricalFeaturesEncodingMethod(str, Enum):
 
 class OtherCategoryAggregationDetails(BaseModel):
     total_percentage: str
-    min_significant_category: str
+    min_significant_category_percentage_threshold: str
     aggregated_categories_distribution: dict[str, str]
 
     @validator('total_percentage')
@@ -83,6 +83,7 @@ CategoricalFeaturesEncodingDetails = dict[str, CategoricalFeatureEncodingDetails
 class DatasetPreprocessing(BaseModel):
     original_dataset: Optional[pd.DataFrame]
     preprocessed_dataset: Optional[pd.DataFrame]
+    required_columns_for_training: Optional[tuple[str, ...]]
     imputation_funnel: Optional[ImputationFunnel]
     unused_dropped_columns_count: Optional[int]
     categorical_features_encoding_details: Optional[CategoricalFeaturesEncodingDetails] = Field(default_factory=dict)

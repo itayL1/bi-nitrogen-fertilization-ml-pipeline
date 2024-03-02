@@ -1,6 +1,9 @@
 from typing import Optional
 
 import pandas as pd
+from pydantic import constr
+
+not_empty_str = constr(min_length=1)
 
 
 def validate_dataframe_has_2_dimensions(df: Optional[pd.DataFrame]) -> None:

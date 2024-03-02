@@ -38,7 +38,7 @@ def _fit_one_hot_encoding_for_feature(
     original_raw_categories = set(feature_col.unique())
     _validate_original_categories(feature_settings, original_raw_categories)
     (
-        min_significant_category_frequency_percentage,
+        min_significant_category_percentage_threshold,
         max_allowed_categories_count,
         allow_unknown_categories_during_inference,
     ) = _extract_feature_one_hot_encoding_settings(feature_settings)
@@ -46,7 +46,7 @@ def _fit_one_hot_encoding_for_feature(
     (
         final_feature_col, insignificant_categories, report_other_category_aggregation_details,
     ) = _map_insignificant_categories_to_other_category(
-        feature_col, min_significant_category_frequency_percentage, max_allowed_categories_count,
+        feature_col, min_significant_category_percentage_threshold, max_allowed_categories_count,
     )
 
     final_categories = set(final_feature_col.unique())
@@ -80,7 +80,7 @@ def _fit_one_hot_encoding_for_feature(
 
     _add_report_warnings_regarding_encoding_if_needed(
         feature_settings, final_categories, final_categories_perc_distribution,
-        max_allowed_categories_count, min_significant_category_frequency_percentage,
+        max_allowed_categories_count, min_significant_category_percentage_threshold,
         report_encoding_details, session_context.pipeline_report,
     )
 
@@ -119,11 +119,11 @@ def _validate_original_categories(
 def _extract_feature_one_hot_encoding_settings(
     feature_settings: FeatureSettings,
 ) -> tuple[float, int, bool]:
-    min_significant_category_frequency_percentage = nested_getattr(
+    min_significant_category_percentage_threshold = nested_getattr(
         feature_settings,
-        'one_hot_encoding_settings.min_significant_category_frequency_percentage',
+        'one_hot_encoding_settings.min_significant_category_percentage_threshold',
         None,
-    ) or defaults.MIN_SIGNIFICANT_CATEGORY_FREQUENCY_PERCENTAGE
+    ) or defaults.MIN_SIGNIFICANT_CATEGORY_PERCENTAGE_THRESHOLD
     max_allowed_categories_count = nested_getattr(
         feature_settings,
         'one_hot_encoding_settings.max_allowed_categories_count',
@@ -136,7 +136,7 @@ def _extract_feature_one_hot_encoding_settings(
     ) or defaults.ALLOW_UNKNOWN_CATEGORIES_DURING_INFERENCE
 
     return (
-        min_significant_category_frequency_percentage,
+        min_significant_category_percentage_threshold,
         max_allowed_categories_count,
         allow_unknown_categories_during_inference,
     )
@@ -144,13 +144,13 @@ def _extract_feature_one_hot_encoding_settings(
 
 def _map_insignificant_categories_to_other_category(
     feature_col: pd.Series,
-    min_significant_category_frequency_percentage: float,
+    min_significant_category_percentage_threshold: float,
     max_allowed_categories_count: int,
 ) -> tuple[pd.Series, set[str], OtherCategoryAggregationDetails]:
     raw_categories_perc_distribution_dict = _get_categories_perc_distribution(feature_col)
     insignificant_categories_perc_distribution = filter_dict(
         raw_categories_perc_distribution_dict,
-        lambda cat, percentage: percentage < min_significant_category_frequency_percentage,
+        lambda cat, percentage: percentage < min_significant_category_percentage_threshold,
     )
 
     insignificant_categories = set(insignificant_categories_perc_distribution.keys())
@@ -163,7 +163,7 @@ def _map_insignificant_categories_to_other_category(
 
     report_other_category_aggregation_details = OtherCategoryAggregationDetails(
         total_percentage=to_displayable_percentage(sum(insignificant_categories_perc_distribution.values())),
-        min_significant_category=to_displayable_percentage(min_significant_category_frequency_percentage),
+        min_significant_category_percentage_threshold=to_displayable_percentage(min_significant_category_percentage_threshold),
         aggregated_categories_distribution=to_displayable_percentage_distribution(
             insignificant_categories_perc_distribution),
     )
@@ -244,7 +244,7 @@ def _add_report_warnings_regarding_encoding_if_needed(
     final_categories: set[str],
     final_categories_perc_distribution: dict[str, float],
     max_allowed_categories_count: int,
-    min_significant_category_frequency_percentage: float,
+    min_significant_category_percentage_threshold: float,
     report_encoding_details: CategoricalFeatureEncodingDetails,
     pipeline_report: TrainPipelineReport,
 ) -> None:
@@ -279,9 +279,9 @@ def _add_report_warnings_regarding_encoding_if_needed(
         pipeline_report.add_warning(
             PipelineModules.dataset_preprocessing,
             f"there is no diversity in the categories of this features, when counting out the 'others' category. "
-            f"consider changing the value of min_significant_category_frequency_percentage for this feature.",
+            f"consider changing the value of min_significant_category_percentage_threshold for this feature.",
             context={
-                'feature.min_significant_category_frequency_percentage': min_significant_category_frequency_percentage,
+                'feature.min_significant_category_percentage_threshold': min_significant_category_percentage_threshold,
                 **base_warnings_context,
             },
         )

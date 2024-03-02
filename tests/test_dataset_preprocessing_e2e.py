@@ -3,6 +3,7 @@ from datetime import datetime
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, EvaluationFoldsKeySettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
@@ -16,6 +17,11 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
     return TrainSessionContext(
         artifacts=TrainArtifacts(
             features_config=features_config,
+        ),
+        params=TrainParams(
+            evaluation_folds_key=EvaluationFoldsKeySettings(
+                column='year',
+            ),
         ),
         pipeline_report=TrainPipelineReport(
             pipeline_execution_time=PipelineExecutionTime(

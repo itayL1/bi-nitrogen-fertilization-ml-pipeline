@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import Collection, Any, Optional, Callable
+from typing import Any, Optional
 
 from pydantic import validator, root_validator, confloat, PositiveInt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import not_empty_str
 from bi_nitrogen_fertilization_ml_pipeline.core.utils.collection_utils import find_duplicates
 
 
@@ -13,13 +14,13 @@ class FeatureKinds(Enum):
 
 
 class OneHotEncodingSettings(BaseModel):
-    min_significant_category_frequency_percentage: Optional[confloat(gt=0, lt=100)]
+    min_significant_category_percentage_threshold: Optional[confloat(gt=0, lt=100)]
     max_allowed_categories_count: Optional[PositiveInt]
     allow_unknown_categories_during_inference: Optional[bool]
 
 
 class FeatureSettings(BaseModel):
-    column: str
+    column: not_empty_str
     kind: FeatureKinds
     one_hot_encoding_settings: Optional[OneHotEncodingSettings]
 
@@ -35,14 +36,8 @@ class FeatureSettings(BaseModel):
         return values
 
 
-class EvaluationFoldsKeySettings(BaseModel):
-    column: str
-    values_mapper: Optional[Callable[[str], str]]
-
-
 class FeaturesConfig(BaseModel):
-    target_column: str
-    evaluation_folds_key: EvaluationFoldsKeySettings
+    target_column: not_empty_str
     features: list[FeatureSettings]
 
     @validator('features')
@@ -72,9 +67,5 @@ class FeaturesConfig(BaseModel):
             raise ValueError('the target column cannot be used as a feature as well')
         return values
 
-    def get_all_columns(self) -> tuple[str, ...]:
-        return (
-            self.target_column,
-            self.evaluation_folds_key.column,
-            *(feature.column for feature in self.features),
-        )
+    def get_feature_columns(self) -> tuple[str, ...]:
+        return tuple(feature.column for feature in self.features)
