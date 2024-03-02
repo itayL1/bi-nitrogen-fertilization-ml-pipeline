@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
 import humanize
@@ -109,8 +110,9 @@ class DatasetPreprocessing(BaseModel):
 
 
 class ModelTraining(BaseModel):
-    random_seed: Optional[int]
-    evaluation_results: Optional[KFoldCrossValidationResults]
+    evaluation_folds_results: Optional[KFoldCrossValidationResults]
+    evaluation_folds_train_figures_root_folder: Optional[Path]
+    final_model_train_figures_folder: Optional[Path]
 
 
 class PipelineModules(str, Enum):
@@ -127,7 +129,7 @@ class ReportWarning(BaseModel):
 class TrainPipelineReport(BaseModel):
     pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
-    model_training: Optional[ModelTraining]
+    model_training: ModelTraining = Field(default_factory=ModelTraining)
     warnings: list[ReportWarning] = Field(default_factory=list)
 
     def copy_without_large_members(self):

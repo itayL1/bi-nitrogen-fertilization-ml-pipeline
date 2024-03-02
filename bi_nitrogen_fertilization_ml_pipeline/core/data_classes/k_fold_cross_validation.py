@@ -15,6 +15,7 @@ class DatasetFoldSplit(BaseModel):
 
 
 class SingleFoldResults(BaseModel):
+    evaluation_set_size: int
     train_set_loss: float
     train_set_main_metric: float
     evaluation_set_loss: float

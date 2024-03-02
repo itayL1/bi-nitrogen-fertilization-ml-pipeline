@@ -23,13 +23,14 @@ TEMP_OUTPUTS_FOLDER = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pi
 def _get_test_train_params() -> TrainParams:
     return TrainParams(
         model_builder=init_baseline_model,
-        epochs_count=5,
+        epochs_count=100,
         evaluation_folds_key=EvaluationFoldsKeySettings(
             column='year',
+            # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
         ),
         early_stopping=TrainEarlyStoppingSettings(
             validation_set_fraction_size=0.2,
-            tolerance_epochs_count=2,
+            tolerance_epochs_count=9,
         ),
     )
 

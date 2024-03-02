@@ -1,8 +1,7 @@
 import keras
-from keras import Model
 import keras.optimizers
+from keras import Model
 
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.preprocessed_datasets import PreprocessedTrainDataset
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import is_model_compiled
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_keras_api_conversions import \
@@ -11,11 +10,9 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_
 
 def prepare_new_model_for_training(
     train_params: TrainParams,
-    preprocessed_train_dataset: PreprocessedTrainDataset,
+    input_features_count: int,
 ) -> Model:
-    model_input_layer_size = preprocessed_train_dataset.get_train_features_count()
-
-    model = train_params.model_builder(model_input_layer_size)
+    model = train_params.model_builder(input_features_count)
     assert model is not None, \
         "the provided model builder returned None, this isn't allowed"
     assert isinstance(model, keras.Model), \

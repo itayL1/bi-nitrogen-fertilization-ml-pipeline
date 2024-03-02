@@ -33,6 +33,7 @@ def setup_train_session_context(
             temp_wip_outputs_folder_path=session_wip_outputs_folder_path,
         )
     finally:
+        assert False, f'aaaaaaa {session_wip_outputs_folder_path}'
         shutil.rmtree(session_wip_outputs_folder_path)
 
 

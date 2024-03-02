@@ -44,7 +44,7 @@ def _fit_model(
 ) -> tuple[History, bool]:
     applied_validation_set_split = False
     train_history = model.fit(
-        X, y, epochs=train_params.epochs_count,
+        X, y, shuffle=True, epochs=train_params.epochs_count,
     )
     return train_history, applied_validation_set_split
 
@@ -59,6 +59,7 @@ def _fit_model_with_early_stopping(
     train_history = model.fit(
         X.to_numpy(np.float32),
         y.to_numpy(np.float32),
+        shuffle=True,
         epochs=train_params.epochs_count,
         validation_split=train_params.early_stopping.validation_set_fraction_size,
         callbacks=[
