@@ -8,7 +8,8 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
-from bi_nitrogen_fertilization_ml_pipeline.model_training.user_input import parse_input_features_config, \
+from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
+from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import parse_input_features_config, \
     validate_input_train_dataset, parse_input_train_params
 
 
@@ -20,8 +21,10 @@ def train_and_evaluate_model(
     features_config = parse_input_features_config(features_config_dict)
     train_params = parse_input_train_params(train_params_dict)
     validate_input_train_dataset(raw_train_dataset_df)
-
     session_context = _init_train_session_context(features_config, train_params)
+
+    preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
+        raw_train_dataset_df, session_context)
 
 
 def _init_train_session_context(
