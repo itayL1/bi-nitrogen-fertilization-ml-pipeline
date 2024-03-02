@@ -19,10 +19,10 @@ class PreprocessedTrainDataset(BaseModel):
         )
 
     def get_full_dataset(self) -> pd.DataFrame:
-        full_dataset_df = self.X
-        full_dataset_df['y'] = self.y
-        full_dataset_df['evaluation_folds_key'] = self.evaluation_folds_key_col
-        return full_dataset_df.copy()
+        full_dataset_df = self.X.copy()
+        full_dataset_df['y'] = self.y.copy()
+        full_dataset_df['evaluation_folds_key'] = self.evaluation_folds_key_col.copy()
+        return full_dataset_df
 
     @validator('X')
     def _validate_X_has_2_dimensions(cls, X: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:

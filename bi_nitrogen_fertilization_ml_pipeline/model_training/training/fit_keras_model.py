@@ -72,6 +72,18 @@ def _fit_model_with_early_stopping(
     return train_history, applied_validation_set_split
 
 
+def _compile_model(model: Model, train_params: TrainParams) -> None:
+    assert not is_model_compiled(model), 'the input model must not be compiled already'
+
+    loss = eval_func_to_keras_loss(train_params.loss_function)
+    evaluation_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
+    model.compile(
+        optimizer=train_params.optimizer,
+        loss=loss,
+        metrics=[evaluation_metric],
+    )
+
+
 def _plot_train_graphs(
     train_history: History,
     train_params: TrainParams,
@@ -85,18 +97,20 @@ def _plot_train_graphs(
     loss_function = train_params.loss_function
     loss_func_random_guess_value = calculate_evaluation_metric_for_random_guess_predictions(y, loss_function)
     group_name_to_ordered_epoch_loss_values = {
-        f'train {loss_function.value}': train_result_values_per_epoch['loss'],
+        'train': train_result_values_per_epoch['loss'],
         **(
-            {f'validation {loss_function.value}': train_result_values_per_epoch['val_loss']}
+            {'validation': train_result_values_per_epoch['val_loss']}
             if applied_validation_set_split else {}
         ),
-        f'random guess {loss_function.value}': [loss_func_random_guess_value] * actual_train_epochs_count,
+        'random guess': [loss_func_random_guess_value] * actual_train_epochs_count,
     }
     plot_evaluation_value_per_training_epoch_graph(
         group_name_to_ordered_epoch_loss_values,
-        eval_value_display_name=f'loss ({loss_function.value})',
+        eval_value_func=loss_function,
+        is_loss_function=True,
         output_graph_jpeg_file_path=output_figures_folder_path / 'loss_per_epoch.jpeg',
-        set_y_axis_min_limit_to_0=True,
+        y_axis_min_limit=0.0,
+        y_axis_max_limit=loss_func_random_guess_value * 1.5,
     )
 
     eval_metric = train_params.evaluation_metric
@@ -104,28 +118,18 @@ def _plot_train_graphs(
     eval_metric_random_guess_value = \
         calculate_evaluation_metric_for_random_guess_predictions(y, eval_metric)
     group_name_to_ordered_epoch_eval_metric_values = {
-        f'train {eval_metric.value}': train_result_values_per_epoch[keras_name_of_eval_metric],
+        'train': train_result_values_per_epoch[keras_name_of_eval_metric],
         **(
-            {f'validation {eval_metric.value}': train_result_values_per_epoch[f'val_{keras_name_of_eval_metric}']}
+            {'validation': train_result_values_per_epoch[f'val_{keras_name_of_eval_metric}']}
             if applied_validation_set_split else {}
         ),
-        f'random guess {eval_metric.value}': [eval_metric_random_guess_value] * actual_train_epochs_count,
+        'random guess': [eval_metric_random_guess_value] * actual_train_epochs_count,
     }
     plot_evaluation_value_per_training_epoch_graph(
         group_name_to_ordered_epoch_eval_metric_values,
-        eval_value_display_name=eval_metric.value,
+        eval_value_func=eval_metric,
+        is_loss_function=False,
         output_graph_jpeg_file_path=output_figures_folder_path / f'{eval_metric.value}_per_epoch.jpeg',
-        set_y_axis_min_limit_to_0=True,
-    )
-
-
-def _compile_model(model: Model, train_params: TrainParams) -> None:
-    assert not is_model_compiled(model), 'the input model must not be compiled already'
-
-    loss = eval_func_to_keras_loss(train_params.loss_function)
-    evaluation_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
-    model.compile(
-        optimizer=train_params.optimizer,
-        loss=loss,
-        metrics=[evaluation_metric],
+        y_axis_min_limit=0.0,
+        y_axis_max_limit=eval_metric_random_guess_value * 1.5,
     )

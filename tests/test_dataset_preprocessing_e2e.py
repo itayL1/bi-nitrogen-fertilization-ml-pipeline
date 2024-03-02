@@ -26,7 +26,6 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
         ),
         pipeline_report=TrainPipelineReport(
             pipeline_execution_time=PipelineExecutionTime(
-
                 pipeline_start_timestamp=datetime.now(),
             ),
         ),
@@ -50,6 +49,8 @@ def test_dataset_preprocessing_e2e():
         raw_inference_dataset_df, train_session_context.artifacts)
 
     # Assert
+    assert 'y' not in preprocessed_train_dataset.X.columns
+
     pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time
     pipeline_execution_time.pipeline_end_timestamp = datetime.now()
     pipeline_execution_time.populate_duration_field()

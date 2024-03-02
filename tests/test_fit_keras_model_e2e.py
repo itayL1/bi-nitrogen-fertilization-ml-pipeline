@@ -25,13 +25,13 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         params=TrainParams(
-            epochs_count=5,
+            epochs_count=10,
             evaluation_folds_key=EvaluationFoldsKeySettings(
                 column='year',
             ),
             early_stopping=TrainEarlyStoppingSettings(
                 validation_set_fraction_size=0.2,
-                tolerance_epochs_count=2,
+                tolerance_epochs_count=9,
             ),
         ),
         pipeline_report=TrainPipelineReport(
@@ -42,7 +42,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
     )
 
 
-def test_dataset_preprocessing_e2e():
+def test_fit_keras_model_e2e():
     # Arrange
     raw_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
 
