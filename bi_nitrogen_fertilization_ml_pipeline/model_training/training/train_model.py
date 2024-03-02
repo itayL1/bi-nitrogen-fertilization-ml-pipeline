@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from keras.models import Model
 from keras.callbacks import History, EarlyStopping
+from keras.models import Model
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_guess_predictions import \
@@ -11,18 +11,16 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_gues
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_process_graphs import \
     plot_evaluation_value_per_training_epoch_graph
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_keras_api_conversions import \
-    eval_func_to_keras_loss, eval_func_to_keras_metric
-from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import is_model_compiled
+    eval_func_to_keras_metric
 
 
-def fit_keras_model(
+def train_model(
     model: Model,
     X: pd.DataFrame,
     y: pd.Series,
     train_params: TrainParams,
     output_figures_folder_path: Path,
 ) -> None:
-    _compile_model(model, train_params)
     if train_params.early_stopping is not None:
         train_history, applied_validation_set_split = _fit_model_with_early_stopping(
             model, X, y, train_params)
@@ -70,18 +68,6 @@ def _fit_model_with_early_stopping(
             ),
         ])
     return train_history, applied_validation_set_split
-
-
-def _compile_model(model: Model, train_params: TrainParams) -> None:
-    assert not is_model_compiled(model), 'the input model must not be compiled already'
-
-    loss = eval_func_to_keras_loss(train_params.loss_function)
-    evaluation_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
-    model.compile(
-        optimizer=train_params.optimizer,
-        loss=loss,
-        metrics=[evaluation_metric],
-    )
 
 
 def _plot_train_graphs(

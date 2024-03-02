@@ -1,16 +1,13 @@
-from datetime import datetime
-
 import pandas as pd
 
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
-    PipelineExecutionTime
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import ModelTrainingArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
+from bi_nitrogen_fertilization_ml_pipeline.model_training.api.setup_train_session_context import \
+    setup_train_session_context
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import parse_input_features_config, \
     validate_input_train_dataset, parse_input_train_params
+from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.k_fold_cross_validation import \
+    key_based_k_fold_cross_validation
 
 
 def train_and_evaluate_model(
@@ -21,24 +18,24 @@ def train_and_evaluate_model(
     features_config = parse_input_features_config(features_config_dict)
     train_params = parse_input_train_params(train_params_dict)
     validate_input_train_dataset(raw_train_dataset_df)
-    session_context = _init_train_session_context(features_config, train_params)
 
-    preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
-        raw_train_dataset_df, session_context)
+    with setup_train_session_context(features_config, train_params) as session_context:
+        preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
+            raw_train_dataset_df, session_context)
 
+        key_based_k_fold_cross_validation(
+            preprocessed_train_dataset,
+            session_context)
+        # _train_final_model_on_entire_dataset()
 
-def _init_train_session_context(
-    features_config: FeaturesConfig,
-    train_params: TrainParams,
-) -> TrainSessionContext:
-    return TrainSessionContext(
-        artifacts=TrainArtifacts(
-            features_config=features_config,
-        ),
-        params=train_params,
-        pipeline_report=TrainPipelineReport(
-            pipeline_execution_time=PipelineExecutionTime(
-                pipeline_start_timestamp=datetime.now(),
-            )
-        ),
-    )
+        session_context.artifacts.model_training = ModelTrainingArtifacts(
+            model_input_order_feature_columns=list(preprocessed_train_dataset.X.columns),
+        )
+        session_context.artifacts.is_fitted = True
+
+        # todo - add warnings for
+        #  * k fold groups not evenly splitted
+        #  * too many k fold groups
+        #  * feature importance not proportional
+        #  * high std in k fold
+        #  * final training close to random guess

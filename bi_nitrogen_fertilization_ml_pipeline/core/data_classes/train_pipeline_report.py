@@ -9,6 +9,8 @@ from pydantic import Field, validator
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import validate_percentage_str, \
     validate_percentage_distribution_dict, validate_dataframe_has_2_dimensions
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import \
+    KFoldCrossValidationResults
 
 
 class PipelineExecutionTime(BaseModel):
@@ -108,6 +110,7 @@ class DatasetPreprocessing(BaseModel):
 
 class ModelTraining(BaseModel):
     random_seed: Optional[int]
+    evaluation_results: Optional[KFoldCrossValidationResults]
 
 
 class PipelineModules(str, Enum):
@@ -124,7 +127,7 @@ class ReportWarning(BaseModel):
 class TrainPipelineReport(BaseModel):
     pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
-    model_training: ModelTraining = Field(default_factory=ModelTraining)
+    model_training: Optional[ModelTraining]
     warnings: list[ReportWarning] = Field(default_factory=list)
 
     def copy_without_large_members(self):

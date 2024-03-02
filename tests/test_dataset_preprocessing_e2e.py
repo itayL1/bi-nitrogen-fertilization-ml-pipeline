@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 
+from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, EvaluationFoldsKeySettings
@@ -19,6 +20,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         params=TrainParams(
+            model_builder=init_baseline_model,
             epochs_count=3,
             evaluation_folds_key=EvaluationFoldsKeySettings(
                 column='year',
@@ -50,6 +52,7 @@ def test_dataset_preprocessing_e2e():
 
     # Assert
     assert 'y' not in preprocessed_train_dataset.X.columns
+    assert list(preprocessed_train_dataset.X.columns) == list(preprocessed_inference_dataset.X.columns)
 
     pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time
     pipeline_execution_time.pipeline_end_timestamp = datetime.now()

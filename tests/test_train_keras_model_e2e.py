@@ -11,7 +11,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_repo
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
-from bi_nitrogen_fertilization_ml_pipeline.model_training.training.fit_keras_model import fit_keras_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
 from sklearn.model_selection import train_test_split
@@ -25,6 +25,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         params=TrainParams(
+            model_builder=init_baseline_model,
             epochs_count=10,
             evaluation_folds_key=EvaluationFoldsKeySettings(
                 column='year',
@@ -42,7 +43,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
     )
 
 
-def test_fit_keras_model_e2e():
+def test_train_keras_model_e2e():
     # Arrange
     raw_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
 
@@ -56,7 +57,7 @@ def test_fit_keras_model_e2e():
 
     # Act
     test_model = init_baseline_model(preprocessed_train_dataset.X.shape[1])
-    fit_keras_model(
+    train_model(
         test_model,
         preprocessed_train_dataset.X,
         preprocessed_train_dataset.y,
