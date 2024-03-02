@@ -8,7 +8,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import 
 from bi_nitrogen_fertilization_ml_pipeline.core.utils.collection_utils import find_duplicates
 
 
-class FeatureKinds(Enum):
+class FeatureKinds(str, Enum):
     numeric = 'numeric'
     categorical = 'categorical'
 

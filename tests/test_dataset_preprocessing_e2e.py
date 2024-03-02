@@ -19,6 +19,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         params=TrainParams(
+            epochs_count=3,
             evaluation_folds_key=EvaluationFoldsKeySettings(
                 column='year',
             ),
