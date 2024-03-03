@@ -1,3 +1,4 @@
+from pathlib import Path
 from uuid import uuid4
 
 from pydantic import Field
@@ -13,6 +14,7 @@ class TrainSessionContext(BaseModel):
     params: TrainParams
     artifacts: TrainArtifacts
     pipeline_report: TrainPipelineReport = Field(default_factory=TrainPipelineReport)
+    temp_wip_outputs_folder_path: Path
 
     def get_required_columns_for_training(self) -> tuple[str, ...]:
         return (

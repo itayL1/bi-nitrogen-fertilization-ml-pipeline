@@ -1,4 +1,6 @@
 import json
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -11,7 +13,8 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_repo
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
-from bi_nitrogen_fertilization_ml_pipeline.model_training.training.fit_keras_model import fit_keras_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
+from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
 from sklearn.model_selection import train_test_split
@@ -25,6 +28,7 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
             features_config=features_config,
         ),
         params=TrainParams(
+            model_builder=init_baseline_model,
             epochs_count=10,
             evaluation_folds_key=EvaluationFoldsKeySettings(
                 column='year',
@@ -39,10 +43,11 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
                 pipeline_start_timestamp=datetime.now(),
             ),
         ),
+        temp_wip_outputs_folder_path=Path(tempfile.mkdtemp()),
     )
 
 
-def test_fit_keras_model_e2e():
+def test_train_keras_model_e2e():
     # Arrange
     raw_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
 
@@ -55,14 +60,20 @@ def test_fit_keras_model_e2e():
         raw_train_dataset_df, train_session_context)
 
     # Act
-    test_model = init_baseline_model(preprocessed_train_dataset.X.shape[1])
-    fit_keras_model(
-        test_model,
-        preprocessed_train_dataset.X,
-        preprocessed_train_dataset.y,
-        train_params=train_session_context.params,
-        output_figures_folder_path=TEMP_OUTPUTS_FOLDER,
-    )
+    try:
+        test_model = prepare_new_model_for_training(
+            train_params=train_session_context.params,
+            input_features_count=preprocessed_train_dataset.get_train_features_count(),
+        )
+        train_model(
+            test_model,
+            preprocessed_train_dataset.X,
+            preprocessed_train_dataset.y,
+            train_params=train_session_context.params,
+            output_figures_folder_path=TEMP_OUTPUTS_FOLDER,
+        )
+    finally:
+        shutil.rmtree(train_session_context.temp_wip_outputs_folder_path)
 
     # # Assert
     # pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time

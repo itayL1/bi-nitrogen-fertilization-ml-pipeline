@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
 import humanize
@@ -9,6 +10,8 @@ from pydantic import Field, validator
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import validate_percentage_str, \
     validate_percentage_distribution_dict, validate_dataframe_has_2_dimensions
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import \
+    KFoldCrossValidationResults
 
 
 class PipelineExecutionTime(BaseModel):
@@ -107,7 +110,9 @@ class DatasetPreprocessing(BaseModel):
 
 
 class ModelTraining(BaseModel):
-    random_seed: Optional[int]
+    evaluation_folds_results: Optional[KFoldCrossValidationResults]
+    evaluation_folds_train_figures_root_folder: Optional[Path]
+    final_model_train_figures_folder: Optional[Path]
 
 
 class PipelineModules(str, Enum):

@@ -15,6 +15,7 @@ def train_dataset_imputation(
     train_dataset_df.replace('', None, inplace=True)
     train_dataset_df.dropna(
         subset=list(session_context.get_required_columns_for_training()), inplace=True)
+    train_dataset_df.reset_index(inplace=True)
     rows_count_after_imputation = train_dataset_df.shape[0]
 
     remaining_rows_percentage = (rows_count_after_imputation / rows_count_before_imputation) * 100
