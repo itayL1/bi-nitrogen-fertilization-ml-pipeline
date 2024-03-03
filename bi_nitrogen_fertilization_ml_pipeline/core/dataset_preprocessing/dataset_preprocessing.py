@@ -14,8 +14,6 @@ def train_dataset_preprocessing(
     raw_train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> PreprocessedTrainDataset:
-    assert not session_context.artifacts.is_fitted, \
-        "the provided train artifacts instance was fitted already, this isn't allowed."
     _validate_required_columns_present_in_input_dataset(
         raw_train_dataset_df, session_context.get_required_columns_for_training())
 
@@ -35,7 +33,6 @@ def train_dataset_preprocessing(
 
     _populate_preprocessing_general_details_in_pipeline_report(
         preprocessed_dataset, original_raw_train_dataset_df, session_context)
-    session_context.artifacts.is_fitted = True
     return preprocessed_dataset
 
 
@@ -43,8 +40,9 @@ def inference_dataset_preprocessing(
     raw_inference_dataset_df: pd.DataFrame,
     training_artifacts: TrainArtifacts,
 ) -> PreprocessedInferenceDataset:
-    assert training_artifacts.is_fitted, \
-        "the provided train artifacts instance was not fitted, this isn't allowed."
+    # todo - move
+    # assert training_artifacts.is_fitted, \
+    #     "the provided train artifacts instance was not fitted, this isn't allowed."
     _validate_required_columns_present_in_input_dataset(
         raw_inference_dataset_df, training_artifacts.features_config.get_feature_columns())
 

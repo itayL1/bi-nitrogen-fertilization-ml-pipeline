@@ -1,9 +1,11 @@
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-from keras.models import Model
 from keras.callbacks import History, EarlyStopping
+from keras.models import Model
+from sklearn.model_selection import train_test_split
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_guess_predictions import \
@@ -11,30 +13,33 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_gues
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_process_graphs import \
     plot_evaluation_value_per_training_epoch_graph
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_keras_api_conversions import \
-    eval_func_to_keras_loss, eval_func_to_keras_metric
-from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import is_model_compiled
+    eval_func_to_keras_metric
 
 
-def fit_keras_model(
+def train_model(
     model: Model,
     X: pd.DataFrame,
     y: pd.Series,
     train_params: TrainParams,
     output_figures_folder_path: Path,
 ) -> None:
-    _compile_model(model, train_params)
     if train_params.early_stopping is not None:
-        train_history, applied_validation_set_split = _fit_model_with_early_stopping(
+        applied_validation_set_split = True
+        train_history, y_train, y_validation = _fit_model_with_early_stopping(
             model, X, y, train_params)
     else:
-        train_history, applied_validation_set_split = _fit_model(
-            model, X, y, train_params)
+        y_train = y
+        y_validation = None
+        applied_validation_set_split = False
+        train_history = _fit_model(model, X, y, train_params)
+
     _plot_train_graphs(
         train_history,
         train_params,
-        applied_validation_set_split,
         output_figures_folder_path,
-        y,
+        y_train,
+        applied_validation_set_split,
+        y_validation,
     )
 
 
@@ -43,12 +48,15 @@ def _fit_model(
     X: pd.DataFrame,
     y: pd.Series,
     train_params: TrainParams,
-) -> tuple[History, bool]:
-    applied_validation_set_split = False
+) -> History:
     train_history = model.fit(
-        X, y, epochs=train_params.epochs_count,
+        X,
+        y,
+        shuffle=True,
+        epochs=train_params.epochs_count,
+        verbose=0 if train_params.silent_models_fitting else 'auto',
     )
-    return train_history, applied_validation_set_split
+    return train_history
 
 
 def _fit_model_with_early_stopping(
@@ -56,46 +64,52 @@ def _fit_model_with_early_stopping(
     X: pd.DataFrame,
     y: pd.Series,
     train_params: TrainParams,
-) -> tuple[History, bool]:
-    applied_validation_set_split = True
+) -> tuple[History, pd.Series, pd.Series]:
+    validation_set_fraction_size = train_params.early_stopping.validation_set_fraction_size
+    X_train, X_validation, y_train, y_validation = train_test_split(
+        X, y, test_size=validation_set_fraction_size, shuffle=True)
+
     train_history = model.fit(
-        X.to_numpy(np.float32),
-        y.to_numpy(np.float32),
+        X_train.to_numpy(np.float32),
+        y_train.to_numpy(np.float32),
+        shuffle=True,
         epochs=train_params.epochs_count,
-        validation_split=train_params.early_stopping.validation_set_fraction_size,
+        validation_data=(
+            X_validation.to_numpy(np.float32),
+            y_validation.to_numpy(np.float32),
+        ),
         callbacks=[
             EarlyStopping(
                 monitor='val_loss',
                 patience=train_params.early_stopping.tolerance_epochs_count,
             ),
-        ])
-    return train_history, applied_validation_set_split
-
-
-def _compile_model(model: Model, train_params: TrainParams) -> None:
-    assert not is_model_compiled(model), 'the input model must not be compiled already'
-
-    loss = eval_func_to_keras_loss(train_params.loss_function)
-    evaluation_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
-    model.compile(
-        optimizer=train_params.optimizer,
-        loss=loss,
-        metrics=[evaluation_metric],
+        ],
+        verbose=0 if train_params.silent_models_fitting else 'auto',
     )
+    return train_history, y_train, y_validation
 
 
 def _plot_train_graphs(
     train_history: History,
     train_params: TrainParams,
-    applied_validation_set_split: bool,
     output_figures_folder_path: Path,
-    y: pd.Series,
+    y_train: pd.Series,
+    applied_validation_set_split: bool,
+    y_validation: Optional[pd.Series] = None
 ) -> None:
+    if applied_validation_set_split:
+        assert y_validation is not None, 'when applied_validation_set_split is enabled, '\
+                                         'the y_validation argument must be provided'
+
     train_result_values_per_epoch = train_history.history
     actual_train_epochs_count = len(train_result_values_per_epoch['loss'])
 
     loss_function = train_params.loss_function
-    loss_func_random_guess_value = calculate_evaluation_metric_for_random_guess_predictions(y, loss_function)
+    loss_func_random_guess_value = calculate_evaluation_metric_for_random_guess_predictions(
+        y_train,
+        y_validation if applied_validation_set_split else y_train,
+        loss_function,
+    )
     group_name_to_ordered_epoch_loss_values = {
         'train': train_result_values_per_epoch['loss'],
         **(
@@ -115,8 +129,11 @@ def _plot_train_graphs(
 
     eval_metric = train_params.evaluation_metric
     keras_name_of_eval_metric = eval_func_to_keras_metric(train_params.evaluation_metric).name
-    eval_metric_random_guess_value = \
-        calculate_evaluation_metric_for_random_guess_predictions(y, eval_metric)
+    eval_metric_random_guess_value = calculate_evaluation_metric_for_random_guess_predictions(
+        y_train,
+        y_validation if applied_validation_set_split else y_train,
+        loss_function,
+    )
     group_name_to_ordered_epoch_eval_metric_values = {
         'train': train_result_values_per_epoch[keras_name_of_eval_metric],
         **(

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import Field
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
@@ -21,7 +23,12 @@ class DatasetPreprocessingArtifacts(BaseModel):
     one_hot_encoded_features: OneHotEncodedFeatures = Field(default_factory=dict)
 
 
+class ModelTrainingArtifacts(BaseModel):
+    model_input_order_feature_columns: list[str]
+
+
 class TrainArtifacts(BaseModel):
     features_config: FeaturesConfig
     dataset_preprocessing: DatasetPreprocessingArtifacts = Field(default_factory=DatasetPreprocessingArtifacts)
+    model_training: Optional[ModelTrainingArtifacts]
     is_fitted: bool = Field(default=False)
