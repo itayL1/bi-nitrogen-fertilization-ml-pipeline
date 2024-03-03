@@ -1,21 +1,13 @@
-import json
-from datetime import datetime
 from pathlib import Path
 
+import keras.optimizers.legacy
+
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
     EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
-    PipelineExecutionTime
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
-from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_and_evaluate_model import train_and_evaluate_model
-from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
-from sklearn.model_selection import train_test_split
 
 TEMP_OUTPUTS_FOLDER = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/tests/temp_outputs/')
 
@@ -24,6 +16,7 @@ def _get_test_train_params() -> TrainParams:
     return TrainParams(
         model_builder=init_baseline_model,
         epochs_count=100,
+        # epochs_count=20,
         evaluation_folds_key=EvaluationFoldsKeySettings(
             column='year',
             # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
@@ -31,7 +24,11 @@ def _get_test_train_params() -> TrainParams:
         early_stopping=TrainEarlyStoppingSettings(
             validation_set_fraction_size=0.2,
             tolerance_epochs_count=9,
+            # tolerance_epochs_count=5,
         ),
+        optimizer_builder=keras.optimizers.legacy.Adam,
+        random_seed=42,
+        silent_models_fitting=True,
     )
 
 

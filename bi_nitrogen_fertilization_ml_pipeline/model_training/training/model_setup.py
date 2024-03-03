@@ -1,6 +1,7 @@
 import keras
 import keras.optimizers
 from keras import Model
+from keras.src.optimizers.legacy import optimizer_v2
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import is_model_compiled
@@ -31,7 +32,7 @@ def _compile_model(model: Model, train_params: TrainParams) -> None:
     loss = eval_func_to_keras_loss(train_params.loss_function)
     evaluation_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
     optimizer = train_params.optimizer_builder()
-    assert isinstance(optimizer, keras.optimizers.Optimizer), \
+    assert isinstance(optimizer, (keras.optimizers.Optimizer, optimizer_v2.OptimizerV2)), \
         f"the provided optimizer builder returned an instance of '{type(optimizer)}', " \
         f"while only '{keras.optimizers.Optimizer}' instances are allowed."
     model.compile(

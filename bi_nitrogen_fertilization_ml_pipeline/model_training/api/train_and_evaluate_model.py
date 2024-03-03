@@ -54,10 +54,9 @@ def _run_train_and_evaluation_session(
     # todo - delete
     train_pipeline_report_dump = \
         session_context.pipeline_report.copy_without_large_members().json(ensure_ascii=False, indent=4)
-    with open('train_and_evaluate_model.py.json', 'w') as f:
+    with open('train_and_evaluate_model.py.5.json', 'w') as f:
         f.write(train_pipeline_report_dump)
     # end of todo - delete
-
 
     # todo - add warnings for
     #  * k fold groups not evenly splitted

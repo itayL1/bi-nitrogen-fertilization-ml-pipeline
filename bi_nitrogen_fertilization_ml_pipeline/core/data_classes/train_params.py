@@ -38,3 +38,4 @@ class TrainParams(BaseModel):
     early_stopping: Optional[TrainEarlyStoppingSettings]
     evaluation_folds_key: EvaluationFoldsKeySettings
     random_seed: Optional[int]
+    silent_models_fitting: bool = False
