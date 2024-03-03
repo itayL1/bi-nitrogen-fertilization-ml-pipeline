@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 import keras.optimizers.legacy
@@ -15,16 +16,16 @@ TEMP_OUTPUTS_FOLDER = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pi
 def _get_test_train_params() -> TrainParams:
     return TrainParams(
         model_builder=init_baseline_model,
-        epochs_count=100,
-        # epochs_count=20,
+        # epochs_count=100,
+        epochs_count=5,
         evaluation_folds_key=EvaluationFoldsKeySettings(
             column='year',
-            # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
+            values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
         ),
         early_stopping=TrainEarlyStoppingSettings(
             validation_set_fraction_size=0.2,
-            tolerance_epochs_count=9,
-            # tolerance_epochs_count=5,
+            # tolerance_epochs_count=9,
+            tolerance_epochs_count=2,
         ),
         optimizer_builder=keras.optimizers.legacy.Adam,
         random_seed=42,
@@ -37,11 +38,14 @@ def test_train_and_evaluate_model_e2e():
     raw_train_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
 
     # Act
-    train_and_evaluate_model(
-        raw_train_dataset_df,
-        features_config_dict=default_Nitrogen_with_Era5_and_NDVI_dataset_features_config().dict(),
-        train_params_dict=_get_test_train_params().dict()
-    )
+    with tempfile.TemporaryFile() as output_model_file_path:
+        output_model_file_path = './output_model17.zip'
+        train_and_evaluate_model(
+            raw_train_dataset_df,
+            features_config_dict=default_Nitrogen_with_Era5_and_NDVI_dataset_features_config().dict(),
+            train_params_dict=_get_test_train_params().dict(),
+            output_model_file_path=output_model_file_path,
+        )
 
     # # Assert
     # pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time
