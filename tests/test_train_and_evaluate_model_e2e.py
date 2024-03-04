@@ -1,4 +1,3 @@
-import tempfile
 from pathlib import Path
 
 import keras.optimizers.legacy
@@ -38,14 +37,13 @@ def test_train_and_evaluate_model_e2e():
     raw_train_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
 
     # Act
-    with tempfile.TemporaryFile() as output_model_file_path:
-        output_model_file_path = './output_model17.zip'
-        train_and_evaluate_model(
-            raw_train_dataset_df,
-            features_config_dict=default_Nitrogen_with_Era5_and_NDVI_dataset_features_config().dict(),
-            train_params_dict=_get_test_train_params().dict(),
-            output_model_file_path=output_model_file_path,
-        )
+    output_model_file_path = './test_train_and_evaluate_model_e2e/outputs/output_model.zip'
+    train_and_evaluate_model(
+        raw_train_dataset_df,
+        features_config_dict=default_Nitrogen_with_Era5_and_NDVI_dataset_features_config().dict(),
+        train_params_dict=_get_test_train_params().dict(),
+        output_model_file_path=output_model_file_path,
+    )
 
     # # Assert
     # pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time

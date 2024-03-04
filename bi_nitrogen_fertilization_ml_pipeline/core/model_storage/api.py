@@ -20,7 +20,10 @@ def store_trained_model(
     train_artifacts: TrainArtifacts,
     output_file_path: Path,
 ) -> None:
-    _validate_storage_file_path(output_file_path)
+    assert train_artifacts.is_fitted,\
+        "the provided train artifacts instance was not fitted. "\
+        "only fitted train artifacts can be stored for trained models."
+    validate_storage_file_name(output_file_path)
     output_file_path.unlink(missing_ok=True)
 
     with tempfile.TemporaryDirectory() as wip_folder_path:
@@ -37,7 +40,9 @@ def store_trained_model(
 def load_trained_model(
     model_file_path: Path,
 ) -> tuple[keras.Model, TrainArtifacts]:
-    _validate_storage_file_path(model_file_path)
+    validate_storage_file_name(model_file_path)
+    assert model_file_path.is_file(),\
+        f"the provided model file path ('{model_file_path}') does not exist"
 
     with tempfile.TemporaryDirectory() as wip_folder_path:
         wip_folder_path = Path(wip_folder_path)
@@ -47,10 +52,13 @@ def load_trained_model(
         loaded_train_artifacts =\
             load_train_artifacts(wip_folder_path / TRAIN_ARTIFACTS_STORAGE_FILE_NAME)
 
+    assert loaded_train_artifacts.is_fitted,\
+        "the loaded train artifacts instance was not fitted. " \
+        "only fitted train artifacts can be loaded for trained models."
     return loaded_trained_model, loaded_train_artifacts
 
 
-def _validate_storage_file_path(storage_file_path: Path):
+def validate_storage_file_name(storage_file_path: Path):
     expected_file_extension = f'.{ARCHIVE_EXTENSIONS}'
     assert storage_file_path.suffix == expected_file_extension, \
         f"only storage paths with the {expected_file_extension} extensions are supported"

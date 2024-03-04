@@ -15,17 +15,16 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_valida
 
 
 class PipelineExecutionTime(BaseModel):
-    duration: Optional[str]
     pipeline_start_timestamp: Optional[datetime]
     pipeline_end_timestamp: Optional[datetime]
 
-    def populate_duration_field(self) -> None:
-        assert self.pipeline_start_timestamp is not None
-        assert self.pipeline_end_timestamp is not None
-        assert self.duration is None, 'the duration field is already populated'
-        self.duration = humanize.precisedelta(
-            self.pipeline_start_timestamp - self.pipeline_end_timestamp
-        )
+    def get_execution_duration(self) -> Optional[str]:
+        if self.pipeline_start_timestamp is None or self.pipeline_end_timestamp is None:
+            return None
+
+        execution_duration_text = humanize.precisedelta(
+            self.pipeline_start_timestamp - self.pipeline_end_timestamp)
+        return execution_duration_text
 
 
 class ImputationFunnel(BaseModel):
@@ -126,7 +125,7 @@ class ReportWarning(BaseModel):
     context: Optional[dict]
 
 
-class TrainPipelineReport(BaseModel):
+class TrainPipelineReportData(BaseModel):
     pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
     model_training: ModelTraining = Field(default_factory=ModelTraining)

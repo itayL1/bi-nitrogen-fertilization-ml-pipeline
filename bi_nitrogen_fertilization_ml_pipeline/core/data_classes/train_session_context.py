@@ -6,15 +6,15 @@ from pydantic import Field
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData
 
 
 class TrainSessionContext(BaseModel):
     session_id: str = Field(default_factory=lambda: uuid4().hex)
     params: TrainParams
     artifacts: TrainArtifacts
-    pipeline_report: TrainPipelineReport = Field(default_factory=TrainPipelineReport)
-    temp_wip_outputs_folder_path: Path
+    pipeline_report: TrainPipelineReportData = Field(default_factory=TrainPipelineReportData)
+    wip_outputs_folder_path: Path
 
     def get_required_columns_for_training(self) -> tuple[str, ...]:
         return (

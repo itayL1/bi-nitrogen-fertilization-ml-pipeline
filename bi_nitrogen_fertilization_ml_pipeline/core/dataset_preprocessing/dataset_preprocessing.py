@@ -14,6 +14,7 @@ def train_dataset_preprocessing(
     raw_train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> PreprocessedTrainDataset:
+    _validate_dataset_not_empty(raw_train_dataset_df)
     _validate_required_columns_present_in_input_dataset(
         raw_train_dataset_df, session_context.get_required_columns_for_training())
 
@@ -40,9 +41,7 @@ def inference_dataset_preprocessing(
     raw_inference_dataset_df: pd.DataFrame,
     training_artifacts: TrainArtifacts,
 ) -> PreprocessedInferenceDataset:
-    # todo - move
-    # assert training_artifacts.is_fitted, \
-    #     "the provided train artifacts instance was not fitted, this isn't allowed."
+    _validate_dataset_not_empty(raw_inference_dataset_df)
     _validate_required_columns_present_in_input_dataset(
         raw_inference_dataset_df, training_artifacts.features_config.get_feature_columns())
 
@@ -53,6 +52,10 @@ def inference_dataset_preprocessing(
     X = feature_extraction.extract_features(
         raw_inference_dataset_df, training_artifacts, for_inference=True)
     return PreprocessedInferenceDataset(X=X)
+
+
+def _validate_dataset_not_empty(input_dataset_df: pd.DataFrame) -> None:
+    assert input_dataset_df.shape[0] > 0, "empty input datasets are not supported"
 
 
 def _validate_required_columns_present_in_input_dataset(
