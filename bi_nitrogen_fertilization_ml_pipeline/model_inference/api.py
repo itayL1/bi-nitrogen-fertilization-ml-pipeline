@@ -22,21 +22,26 @@ def predict_using_trained_model(
         preprocessed_inference_dataset, train_artifacts)
 
     ordered_predictions_series = _make_predications_for_inference_dataset(
-        trained_model, preprocessed_inference_dataset, train_artifacts)
+        trained_model, preprocessed_inference_dataset, raw_inference_dataset_df, train_artifacts)
     return ordered_predictions_series
 
 
 def _make_predications_for_inference_dataset(
     trained_model: Model,
     preprocessed_inference_dataset: PreprocessedInferenceDataset,
+    raw_inference_dataset_df: pd.DataFrame,
     train_artifacts: TrainArtifacts,
 ) -> pd.Series:
     X = preprocessed_inference_dataset.X
+    assert X.index.equals(raw_inference_dataset_df.index),\
+        "the indices of the input raw dataset and the preprocessed dataset are " \
+        "expected to be exactly the same, but they aren't"
+
     ordered_predictions_array: np.array = trained_model.predict(X, verbose=0)
 
     target_column_name = train_artifacts.features_config.target_column
     ordered_predictions_series = pd.Series(
-        ordered_predictions_array, index=X.index, name=target_column_name)
+        ordered_predictions_array.flatten(), index=X.index, name=target_column_name)
     return ordered_predictions_series
 
 
