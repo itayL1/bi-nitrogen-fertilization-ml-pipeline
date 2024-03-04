@@ -1,23 +1,18 @@
 import shutil
-import tempfile
-from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import ContextManager
 
 import pandas as pd
 from keras import Model
 
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
+from bi_nitrogen_fertilization_ml_pipeline.core import model_storage
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.preprocessed_datasets import PreprocessedTrainDataset
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import ModelTrainingArtifacts, \
-    TrainArtifacts
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
-    PipelineExecutionTime
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import ModelTrainingArtifacts
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_logical_steps import \
+    TrainPipelineLogicalSteps
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
-from bi_nitrogen_fertilization_ml_pipeline.core import model_storage
+from bi_nitrogen_fertilization_ml_pipeline.model_training.api.setup_train_session_context import train_session_context
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import parse_input_features_config, \
     validate_input_train_dataset, parse_input_train_params
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.k_fold_cross_validation import \
@@ -42,9 +37,10 @@ def train_and_evaluate_model(
     model_storage.validate_storage_file_name(output_model_file_path)
     validate_input_train_dataset(raw_train_dataset_df)
 
-    with _temporary_wip_outputs_folder() as session_wip_outputs_folder_path:
-        session_context = _create_train_session_context(
-            features_config, train_params, session_wip_outputs_folder_path)
+    with train_session_context(
+        features_config, train_params,
+        first_pipeline_step=TrainPipelineLogicalSteps.preprocess_train_dataset,
+    ) as session_context:
         trained_model = _run_train_and_evaluation_session(raw_train_dataset_df, session_context)
 
         wip_output_model_file = session_context.wip_outputs_folder_path / 'output_model.zip'
@@ -52,6 +48,8 @@ def train_and_evaluate_model(
 
         session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
 
+        session_context.pipeline_main_progress_bar.move_to_next_step(
+            TrainPipelineLogicalSteps.generate_pipeline_report)
         wip_train_pipeline_report_folder = session_context.wip_outputs_folder_path / 'train_pipeline_report'
         create_and_save_train_pipeline_report(
             session_context.pipeline_report, wip_train_pipeline_report_folder)
@@ -67,42 +65,20 @@ def train_and_evaluate_model(
         #  * final training close to random guess
 
 
-@contextmanager
-def _temporary_wip_outputs_folder() -> ContextManager[Path]:
-    with tempfile.TemporaryDirectory() as session_wip_outputs_folder_path:
-        yield Path(session_wip_outputs_folder_path)
-
-
-def _create_train_session_context(
-    features_config: FeaturesConfig,
-    train_params: TrainParams,
-    session_wip_outputs_folder_path: Path,
-) -> TrainSessionContext:
-    return TrainSessionContext(
-        artifacts=TrainArtifacts(
-            features_config=features_config,
-        ),
-        params=train_params,
-        pipeline_report=TrainPipelineReportData(
-            pipeline_execution_time=PipelineExecutionTime(
-                pipeline_start_timestamp=datetime.now(),
-            )
-        ),
-        wip_outputs_folder_path=session_wip_outputs_folder_path,
-    )
-
-
 def _run_train_and_evaluation_session(
     raw_train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> Model:
     if session_context.params.random_seed is not None:
         set_random_seed_globally(session_context.params.random_seed)
+    main_progress_bar = session_context.pipeline_main_progress_bar
 
     preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
         raw_train_dataset_df, session_context)
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.model_k_fold_cross_valuation)
     key_based_k_fold_cross_validation(
         preprocessed_train_dataset, session_context)
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_training)
     final_model = _train_final_model_on_entire_dataset(
         preprocessed_train_dataset, session_context)
 
