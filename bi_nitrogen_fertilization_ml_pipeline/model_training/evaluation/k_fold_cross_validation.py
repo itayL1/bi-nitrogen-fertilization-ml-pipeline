@@ -1,9 +1,9 @@
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
+from typing import Generator, ContextManager, Callable
 
 import pandas as pd
 from keras import Model
-from tqdm import tqdm
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import DatasetFoldSplit, \
     FoldModelEvaluationResults, KFoldCrossValidationResults
@@ -22,9 +22,8 @@ def key_based_k_fold_cross_validation(
     folds_train_figures_folder = session_context.wip_outputs_folder_path / 'folds_train_figures'
     model_input_features_count = preprocessed_train_dataset.get_train_features_count()
 
-    folds_count = _calc_folds_count(preprocessed_train_dataset)
     folds_results = []
-    with tqdm(desc='Evaluation cross validation folds loop', total=folds_count) as pbar:
+    with _folds_display_progress_bar(preprocessed_train_dataset, session_context) as advance_pbar:
         for fold_split in _split_dataset_to_folds_based_on_key_col(preprocessed_train_dataset):
             fold_key = fold_split.fold_key
             fold_train_output_figures_folder = _setup_fold_train_output_figures_folder(
@@ -33,7 +32,7 @@ def key_based_k_fold_cross_validation(
                 fold_split, model_input_features_count, fold_train_output_figures_folder, session_context,
             )
             folds_results.append(fold_results)
-            pbar.update()
+            advance_pbar()
 
     _populate_report_with_k_fold_evaluation_results(
         folds_results, folds_train_figures_folder, session_context)
@@ -58,6 +57,26 @@ def _split_dataset_to_folds_based_on_key_col(
             X_evaluation=X.iloc[group_segment.index],
             y_evaluation=y.iloc[group_segment.index],
         )
+
+
+@contextmanager
+def _folds_display_progress_bar(
+    preprocessed_train_dataset: PreprocessedTrainDataset,
+    session_context: TrainSessionContext,
+) -> ContextManager[Callable[[], None]]:
+    rich_progress = session_context.rich_progress
+
+    folds_count = _calc_folds_count(preprocessed_train_dataset)
+    folds_progress_rich_task_id = rich_progress.add_task(
+        description="[green]Evaluation folds progress", total=folds_count, start=True)
+
+    def _advance_pbar():
+        rich_progress.update(folds_progress_rich_task_id, advance=1)
+
+    try:
+        yield _advance_pbar
+    finally:
+        rich_progress.remove_task(folds_progress_rich_task_id)
 
 
 def _group_series_by_values(series: pd.Series):

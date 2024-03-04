@@ -19,7 +19,7 @@ def _get_test_train_params() -> TrainParams:
         epochs_count=5,
         evaluation_folds_key=EvaluationFoldsKeySettings(
             column='year',
-            values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
+            # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
         ),
         early_stopping=TrainEarlyStoppingSettings(
             validation_set_fraction_size=0.2,
