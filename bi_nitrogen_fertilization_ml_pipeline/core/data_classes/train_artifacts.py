@@ -24,7 +24,7 @@ class DatasetPreprocessingArtifacts(BaseModel):
 
 
 class ModelTrainingArtifacts(BaseModel):
-    model_input_order_feature_columns: list[str]
+    model_input_ordered_feature_columns: list[str]
 
 
 class TrainArtifacts(BaseModel):

@@ -1,15 +1,17 @@
 from pathlib import Path
 
 import keras.optimizers.legacy
+from sklearn.model_selection import train_test_split
 
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
     EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
+from bi_nitrogen_fertilization_ml_pipeline.model_inference.api import predict_using_trained_model
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_and_evaluate_model import train_and_evaluate_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_keras_api_conversions import \
+    eval_func_to_keras_metric
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
-
-TEMP_OUTPUTS_FOLDER = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/tests/temp_outputs/')
 
 
 def _get_test_train_params() -> TrainParams:
@@ -34,16 +36,30 @@ def _get_test_train_params() -> TrainParams:
 
 def test_train_and_evaluate_model_e2e():
     # Arrange
-    raw_train_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
+    features_config = default_Nitrogen_with_Era5_and_NDVI_dataset_features_config()
+    train_params = _get_test_train_params()
+    raw_dataset_df = load_Nitrogen_with_Era5_and_NDVI_dataset()
+    raw_dataset_df.dropna(subset=[features_config.target_column], inplace=True)
+    raw_train_dataset_df, raw_inference_dataset_df = \
+        train_test_split(raw_dataset_df, test_size=0.2, random_state=42)
 
     # Act
-    output_model_file_path = './test_train_and_evaluate_model_e2e/outputs/output_model.zip'
+    output_model_file_path = './test_full_e2e/outputs/output_model.zip'
     train_and_evaluate_model(
         raw_train_dataset_df,
-        features_config_dict=default_Nitrogen_with_Era5_and_NDVI_dataset_features_config().dict(),
-        train_params_dict=_get_test_train_params().dict(),
+        features_config_dict=features_config.dict(),
+        train_params_dict=train_params.dict(),
         output_model_file_path=output_model_file_path,
     )
+
+    y_inference_pred = predict_using_trained_model(
+        raw_inference_dataset_df, output_model_file_path)
+    y_inference_true = raw_inference_dataset_df[features_config.target_column]
+
+    eval_metric = eval_func_to_keras_metric(train_params.evaluation_metric)
+    eval_metric.update_state(y_inference_true, y_inference_pred)
+    metric_value_on_inference_set = float(eval_metric.result().numpy())
+    print(dict(metric_value_on_inference_set=metric_value_on_inference_set))
 
     # # Assert
     # pipeline_execution_time = train_session_context.pipeline_report.pipeline_execution_time
