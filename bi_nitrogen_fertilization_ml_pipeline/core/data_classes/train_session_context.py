@@ -16,7 +16,7 @@ class TrainSessionContext(BaseModel):
     pipeline_report: TrainPipelineReportData = Field(default_factory=TrainPipelineReportData)
     wip_outputs_folder_path: Path
 
-    def get_required_columns_for_training(self) -> tuple[str, ...]:
+    def get_raw_dataset_columns_required_for_training(self) -> tuple[str, ...]:
         return (
             self.artifacts.features_config.target_column,
             self.params.evaluation_folds_key.column,

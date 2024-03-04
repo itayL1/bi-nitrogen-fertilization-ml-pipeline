@@ -16,7 +16,7 @@ def train_dataset_preprocessing(
 ) -> PreprocessedTrainDataset:
     _validate_dataset_not_empty(raw_train_dataset_df)
     _validate_required_columns_present_in_input_dataset(
-        raw_train_dataset_df, session_context.get_required_columns_for_training())
+        raw_train_dataset_df, session_context.get_raw_dataset_columns_required_for_training())
 
     original_raw_train_dataset_df = raw_train_dataset_df
     raw_train_dataset_df = raw_train_dataset_df.copy()
@@ -72,12 +72,12 @@ def _populate_preprocessing_general_details_in_pipeline_report(
     original_raw_train_dataset_df: pd.DataFrame,
     session_context: TrainSessionContext,
 ) -> None:
-    session_context.pipeline_report.dataset_preprocessing.original_dataset = original_raw_train_dataset_df.copy()
-    session_context.pipeline_report.dataset_preprocessing.preprocessed_dataset = \
+    session_context.pipeline_report.dataset_preprocessing.original_input_dataset = original_raw_train_dataset_df.copy()
+    session_context.pipeline_report.dataset_preprocessing.preprocessed_input_dataset = \
         preprocessed_dataset.get_full_dataset()
-    session_context.pipeline_report.dataset_preprocessing.required_columns_for_training = \
-        session_context.get_required_columns_for_training()
+    session_context.pipeline_report.dataset_preprocessing.raw_dataset_columns_required_for_training = \
+        session_context.get_raw_dataset_columns_required_for_training()
 
     raw_dataset_columns_count = original_raw_train_dataset_df.shape[1]
     session_context.pipeline_report.dataset_preprocessing.unused_dropped_columns_count = \
-        raw_dataset_columns_count - len(session_context.get_required_columns_for_training())
+        raw_dataset_columns_count - len(session_context.get_raw_dataset_columns_required_for_training())

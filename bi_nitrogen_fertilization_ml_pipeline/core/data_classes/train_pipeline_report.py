@@ -83,24 +83,24 @@ CategoricalFeaturesEncodingDetails = dict[str, CategoricalFeatureEncodingDetails
 
 
 class DatasetPreprocessing(BaseModel):
-    original_dataset: Optional[pd.DataFrame]
-    preprocessed_dataset: Optional[pd.DataFrame]
-    required_columns_for_training: Optional[tuple[str, ...]]
+    original_input_dataset: Optional[pd.DataFrame]
+    preprocessed_input_dataset: Optional[pd.DataFrame]
+    raw_dataset_columns_required_for_training: Optional[tuple[str, ...]]
     imputation_funnel: Optional[ImputationFunnel]
     unused_dropped_columns_count: Optional[int]
     categorical_features_encoding_details: Optional[CategoricalFeaturesEncodingDetails] = Field(default_factory=dict)
 
     def copy_without_large_members(self):
-        return self.copy(deep=True, exclude={'original_dataset', 'preprocessed_dataset'})
+        return self.copy(deep=True, exclude={'original_input_dataset', 'preprocessed_input_dataset'})
 
-    @validator('original_dataset')
+    @validator('original_input_dataset')
     def _validate_original_dataset_has_2_dimensions(
         cls, original_dataset: Optional[pd.DataFrame],
     ) -> Optional[pd.DataFrame]:
         validate_dataframe_has_2_dimensions(original_dataset)
         return original_dataset
 
-    @validator('preprocessed_dataset')
+    @validator('preprocessed_input_dataset')
     def _validate_preprocessed_dataset_has_2_dimensions(
         cls, preprocessed_dataset: Optional[pd.DataFrame],
     ) -> Optional[pd.DataFrame]:
