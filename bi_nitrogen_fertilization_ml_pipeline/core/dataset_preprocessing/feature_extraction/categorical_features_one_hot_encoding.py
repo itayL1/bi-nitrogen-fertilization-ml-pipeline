@@ -9,7 +9,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts imp
     OneHotEncodedFeatures
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import \
     OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod, \
-    FinalCategories, PipelineModules, TrainPipelineReport
+    FinalCategories, PipelineModules, TrainPipelineReportData
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage, \
     to_displayable_percentage_distribution
@@ -246,7 +246,7 @@ def _add_report_warnings_regarding_encoding_if_needed(
     max_allowed_categories_count: int,
     min_significant_category_percentage_threshold: float,
     report_encoding_details: CategoricalFeatureEncodingDetails,
-    pipeline_report: TrainPipelineReport,
+    pipeline_report: TrainPipelineReportData,
 ) -> None:
     base_warnings_context = {
         'feature_column': feature_settings.column,

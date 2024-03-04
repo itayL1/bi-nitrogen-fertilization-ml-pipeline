@@ -19,7 +19,7 @@ def key_based_k_fold_cross_validation(
     preprocessed_train_dataset: PreprocessedTrainDataset,
     session_context: TrainSessionContext,
 ) -> None:
-    folds_train_figures_folder = session_context.temp_wip_outputs_folder_path / 'folds_train_figures'
+    folds_train_figures_folder = session_context.wip_outputs_folder_path / 'folds_train_figures'
     model_input_features_count = preprocessed_train_dataset.get_train_features_count()
 
     folds_count = _calc_folds_count(preprocessed_train_dataset)
@@ -127,7 +127,7 @@ def _get_fold_model_evaluation_metrics_for_dataset(
 ) -> tuple[float, float]:
     loss_metric_name, main_metric_name = _extract_evaluation_metric_names(fold_model)
     dataset_set_evaluation_metrics = fold_model.evaluate(
-        x=X, y=y, return_dict=True)
+        x=X, y=y, return_dict=True, verbose=0)
     loss = dataset_set_evaluation_metrics[loss_metric_name]
     main_metric = dataset_set_evaluation_metrics[main_metric_name]
     return loss, main_metric

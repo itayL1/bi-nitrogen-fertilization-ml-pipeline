@@ -15,17 +15,16 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_valida
 
 
 class PipelineExecutionTime(BaseModel):
-    duration: Optional[str]
     pipeline_start_timestamp: Optional[datetime]
     pipeline_end_timestamp: Optional[datetime]
 
-    def populate_duration_field(self) -> None:
-        assert self.pipeline_start_timestamp is not None
-        assert self.pipeline_end_timestamp is not None
-        assert self.duration is None, 'the duration field is already populated'
-        self.duration = humanize.precisedelta(
-            self.pipeline_start_timestamp - self.pipeline_end_timestamp
-        )
+    def get_execution_duration(self) -> Optional[str]:
+        if self.pipeline_start_timestamp is None or self.pipeline_end_timestamp is None:
+            return None
+
+        execution_duration_text = humanize.precisedelta(
+            self.pipeline_start_timestamp - self.pipeline_end_timestamp)
+        return execution_duration_text
 
 
 class ImputationFunnel(BaseModel):
@@ -84,24 +83,24 @@ CategoricalFeaturesEncodingDetails = dict[str, CategoricalFeatureEncodingDetails
 
 
 class DatasetPreprocessing(BaseModel):
-    original_dataset: Optional[pd.DataFrame]
-    preprocessed_dataset: Optional[pd.DataFrame]
-    required_columns_for_training: Optional[tuple[str, ...]]
+    original_input_dataset: Optional[pd.DataFrame]
+    preprocessed_input_dataset: Optional[pd.DataFrame]
+    raw_dataset_columns_required_for_training: Optional[tuple[str, ...]]
     imputation_funnel: Optional[ImputationFunnel]
     unused_dropped_columns_count: Optional[int]
     categorical_features_encoding_details: Optional[CategoricalFeaturesEncodingDetails] = Field(default_factory=dict)
 
     def copy_without_large_members(self):
-        return self.copy(deep=True, exclude={'original_dataset', 'preprocessed_dataset'})
+        return self.copy(deep=True, exclude={'original_input_dataset', 'preprocessed_input_dataset'})
 
-    @validator('original_dataset')
+    @validator('original_input_dataset')
     def _validate_original_dataset_has_2_dimensions(
         cls, original_dataset: Optional[pd.DataFrame],
     ) -> Optional[pd.DataFrame]:
         validate_dataframe_has_2_dimensions(original_dataset)
         return original_dataset
 
-    @validator('preprocessed_dataset')
+    @validator('preprocessed_input_dataset')
     def _validate_preprocessed_dataset_has_2_dimensions(
         cls, preprocessed_dataset: Optional[pd.DataFrame],
     ) -> Optional[pd.DataFrame]:
@@ -126,7 +125,7 @@ class ReportWarning(BaseModel):
     context: Optional[dict]
 
 
-class TrainPipelineReport(BaseModel):
+class TrainPipelineReportData(BaseModel):
     pipeline_execution_time: PipelineExecutionTime = Field(default_factory=PipelineExecutionTime)
     dataset_preprocessing: DatasetPreprocessing = Field(default_factory=DatasetPreprocessing)
     model_training: ModelTraining = Field(default_factory=ModelTraining)

@@ -14,7 +14,7 @@ def train_dataset_imputation(
     rows_count_before_imputation = train_dataset_df.shape[0]
     train_dataset_df.replace('', None, inplace=True)
     train_dataset_df.dropna(
-        subset=list(session_context.get_required_columns_for_training()), inplace=True)
+        subset=list(session_context.get_raw_dataset_columns_required_for_training()), inplace=True)
     train_dataset_df.reset_index(inplace=True)
     rows_count_after_imputation = train_dataset_df.shape[0]
 

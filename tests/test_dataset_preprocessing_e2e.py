@@ -8,7 +8,7 @@ from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_bas
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, EvaluationFoldsKeySettings
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReport, \
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
@@ -29,12 +29,12 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
                 column='year',
             ),
         ),
-        pipeline_report=TrainPipelineReport(
+        pipeline_report=TrainPipelineReportData(
             pipeline_execution_time=PipelineExecutionTime(
                 pipeline_start_timestamp=datetime.now(),
             ),
         ),
-        temp_wip_outputs_folder_path=Path(tempfile.mkdtemp()),
+        wip_outputs_folder_path=Path(tempfile.mkdtemp()),
     )
 
 
@@ -55,7 +55,7 @@ def test_dataset_preprocessing_e2e():
         preprocessed_inference_dataset = dataset_preprocessing.inference_dataset_preprocessing(
             raw_inference_dataset_df, train_session_context.artifacts)
     finally:
-        shutil.rmtree(train_session_context.temp_wip_outputs_folder_path)
+        shutil.rmtree(train_session_context.wip_outputs_folder_path)
 
     # Assert
     assert 'y' not in preprocessed_train_dataset.X.columns
