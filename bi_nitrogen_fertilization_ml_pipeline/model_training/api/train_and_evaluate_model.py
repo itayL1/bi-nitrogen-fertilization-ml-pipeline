@@ -37,16 +37,11 @@ def train_and_evaluate_model(
     model_storage.validate_storage_file_name(output_model_file_path)
     validate_input_train_dataset(raw_train_dataset_df)
 
-    with train_session_context(
-        features_config, train_params,
-        first_pipeline_step=TrainPipelineLogicalSteps.preprocess_train_dataset,
-    ) as session_context:
+    with train_session_context(features_config, train_params) as session_context:
         trained_model = _run_train_and_evaluation_session(raw_train_dataset_df, session_context)
 
         wip_output_model_file = session_context.wip_outputs_folder_path / 'output_model.zip'
         model_storage.store_trained_model(trained_model, session_context.artifacts, wip_output_model_file)
-
-        session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
 
         session_context.pipeline_main_progress_bar.move_to_next_step(
             TrainPipelineLogicalSteps.generate_pipeline_report)
@@ -54,6 +49,7 @@ def train_and_evaluate_model(
         create_and_save_train_pipeline_report(
             session_context.pipeline_report, wip_train_pipeline_report_folder)
 
+        session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
         _move_wip_files_to_output_paths(
             output_model_file_path, wip_output_model_file, wip_train_pipeline_report_folder)
 
@@ -73,11 +69,14 @@ def _run_train_and_evaluation_session(
         set_random_seed_globally(session_context.params.random_seed)
     main_progress_bar = session_context.pipeline_main_progress_bar
 
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.preprocess_train_dataset)
     preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
         raw_train_dataset_df, session_context)
+
     main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.model_k_fold_cross_valuation)
     key_based_k_fold_cross_validation(
         preprocessed_train_dataset, session_context)
+
     main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_training)
     final_model = _train_final_model_on_entire_dataset(
         preprocessed_train_dataset, session_context)
@@ -85,7 +84,6 @@ def _run_train_and_evaluation_session(
     session_context.artifacts.model_training = ModelTrainingArtifacts(
         model_input_ordered_feature_columns=list(preprocessed_train_dataset.X.columns),
     )
-
     session_context.artifacts.is_fitted = True
     return final_model
 
