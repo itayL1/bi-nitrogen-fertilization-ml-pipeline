@@ -12,7 +12,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
-from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_pipeline_progress_display import \
+from bi_nitrogen_fertilization_ml_pipeline.core.display_utils.train_pipeline_progress_display import \
     TrainPipelineMainProgressBarManager
 
 

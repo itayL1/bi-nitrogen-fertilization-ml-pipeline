@@ -5,7 +5,7 @@ import keras.optimizers.legacy
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
     EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
-from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_and_evaluate_model import train_and_evaluate_model
+from bi_nitrogen_fertilization_ml_pipeline.main_api import train_and_evaluate_model
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
 
