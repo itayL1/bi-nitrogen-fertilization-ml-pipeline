@@ -4,8 +4,7 @@ from sklearn.model_selection import train_test_split
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
     EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
-from bi_nitrogen_fertilization_ml_pipeline.model_inference.api import predict_using_trained_model
-from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_and_evaluate_model import train_and_evaluate_model
+from bi_nitrogen_fertilization_ml_pipeline.main_api import train_and_evaluate_model, predict_using_trained_model
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.train_params_to_keras_api_conversions import \
     eval_func_to_keras_metric
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
