@@ -46,12 +46,12 @@ class TrainPipelineMainProgressBarManager:
     def _progress_bar_description_for_pipeline_step(
         cls, pipeline_step: TrainPipelineLogicalSteps,
     ) -> str:
-        if pipeline_step == TrainPipelineLogicalSteps.preprocess_train_dataset:
-            step_description = 'preprocessing the train dataset'
-        elif pipeline_step == TrainPipelineLogicalSteps.model_k_fold_cross_valuation:
+        if pipeline_step == TrainPipelineLogicalSteps.model_k_fold_cross_valuation:
             step_description = 'evaluating the model (K-fold)'
         elif pipeline_step == TrainPipelineLogicalSteps.final_model_training:
             step_description = 'training the final model'
+        elif pipeline_step == TrainPipelineLogicalSteps.final_model_feature_importance_extraction:
+            step_description = 'extraction the feature importance of the final model'
         elif pipeline_step == TrainPipelineLogicalSteps.generate_pipeline_report:
             step_description = 'generating the train pipeline report'
         else:
@@ -64,12 +64,12 @@ class TrainPipelineMainProgressBarManager:
     def _get_step_finished_display_message(
         cls, pipeline_step: TrainPipelineLogicalSteps,
     ) -> str:
-        if pipeline_step == TrainPipelineLogicalSteps.preprocess_train_dataset:
-            step_finished_message = 'the preprocessing of the train dataset has finished'
-        elif pipeline_step == TrainPipelineLogicalSteps.model_k_fold_cross_valuation:
+        if pipeline_step == TrainPipelineLogicalSteps.model_k_fold_cross_valuation:
             step_finished_message = 'the model evaluation (K-fold) has finished'
         elif pipeline_step == TrainPipelineLogicalSteps.final_model_training:
             step_finished_message = 'the training process of the final model has finished'
+        elif pipeline_step == TrainPipelineLogicalSteps.final_model_feature_importance_extraction:
+            step_finished_message = 'the extraction of the feature importance for the final model has finished'
         elif pipeline_step == TrainPipelineLogicalSteps.generate_pipeline_report:
             step_finished_message = 'the train pipeline report has been generated'
         else:

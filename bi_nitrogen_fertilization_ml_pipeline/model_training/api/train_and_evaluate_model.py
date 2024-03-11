@@ -17,6 +17,8 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import 
     validate_input_train_dataset, parse_input_train_params
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.k_fold_cross_validation import \
     key_based_k_fold_cross_validation
+from bi_nitrogen_fertilization_ml_pipeline.model_training.feature_importance.api import \
+    extract_feature_importance_using_shap
 from bi_nitrogen_fertilization_ml_pipeline.model_training.train_pipeline_report import \
     create_and_save_train_pipeline_report
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
@@ -69,15 +71,12 @@ def _run_train_and_evaluation_session(
         set_random_seed_globally(session_context.params.random_seed)
     main_progress_bar = session_context.pipeline_main_progress_bar
 
-    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.preprocess_train_dataset)
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.model_k_fold_cross_valuation)
     preprocessed_train_dataset = dataset_preprocessing.train_dataset_preprocessing(
         raw_train_dataset_df, session_context)
-
-    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.model_k_fold_cross_valuation)
     key_based_k_fold_cross_validation(
         preprocessed_train_dataset, session_context)
 
-    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_training)
     final_model = _train_final_model_on_entire_dataset(
         preprocessed_train_dataset, session_context)
 
@@ -96,7 +95,9 @@ def _train_final_model_on_entire_dataset(
         session_context.wip_outputs_folder_path / 'final_model_train_figures'
     final_model_train_figures_folder.mkdir(parents=True, exist_ok=True)
     model_input_features_count = preprocessed_train_dataset.get_train_features_count()
+    main_progress_bar = session_context.pipeline_main_progress_bar
 
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_training)
     final_model = prepare_new_model_for_training(
         session_context.params, model_input_features_count)
     train_model(
@@ -105,6 +106,13 @@ def _train_final_model_on_entire_dataset(
         y=preprocessed_train_dataset.y,
         train_params=session_context.params,
         output_figures_folder_path=final_model_train_figures_folder,
+    )
+
+    main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_feature_importance_extraction)
+    extract_feature_importance_using_shap(
+        final_model,
+        X=preprocessed_train_dataset.X,
+        output_summary_figure_path=final_model_train_figures_folder / 'shap_feature_importance_summary.jpeg'
     )
 
     model_training = session_context.pipeline_report.model_training
