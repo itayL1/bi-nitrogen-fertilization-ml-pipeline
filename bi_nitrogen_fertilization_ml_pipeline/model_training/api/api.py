@@ -112,7 +112,8 @@ def _train_final_model_on_entire_dataset(
     extract_feature_importance_using_shap(
         final_model,
         X=preprocessed_train_dataset.X,
-        output_summary_figure_path=final_model_train_figures_folder / 'shap_feature_importance_summary.jpeg'
+        output_summary_figure_path=final_model_train_figures_folder / 'shap_feature_importance_summary.jpeg',
+        random_seed=session_context.params.random_seed,
     )
 
     model_training = session_context.pipeline_report.model_training
