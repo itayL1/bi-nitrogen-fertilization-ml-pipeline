@@ -14,15 +14,12 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_repo
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.train_pipeline_progress_display import \
     TrainPipelineMainProgressBarManager
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_logical_steps import \
-    TrainPipelineLogicalSteps
 
 
 @contextmanager
 def train_session_context(
     features_config: FeaturesConfig,
     train_params: TrainParams,
-    first_pipeline_step: TrainPipelineLogicalSteps,
 ) -> ContextManager[TrainSessionContext]:
     with (
         tempfile.TemporaryDirectory() as session_wip_outputs_folder_path,
@@ -30,7 +27,6 @@ def train_session_context(
     ):
         pipeline_main_progress_bar = TrainPipelineMainProgressBarManager(
             rich_progress=rich_progress,
-            first_pipeline_step=first_pipeline_step,
         )
         yield TrainSessionContext(
             artifacts=TrainArtifacts(
