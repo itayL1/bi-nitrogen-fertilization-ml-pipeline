@@ -51,7 +51,7 @@ class TrainPipelineMainProgressBarManager:
         elif pipeline_step == TrainPipelineLogicalSteps.final_model_training:
             step_description = 'training the final model'
         elif pipeline_step == TrainPipelineLogicalSteps.final_model_feature_importance_extraction:
-            step_description = 'extraction the feature importance of the final model'
+            step_description = 'extracting the feature importance of the final model'
         elif pipeline_step == TrainPipelineLogicalSteps.generate_pipeline_report:
             step_description = 'generating the train pipeline report'
         else:

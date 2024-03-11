@@ -17,7 +17,7 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.api.user_input import 
     validate_input_train_dataset, parse_input_train_params
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.k_fold_cross_validation import \
     key_based_k_fold_cross_validation
-from bi_nitrogen_fertilization_ml_pipeline.model_training.feature_importance.api import \
+from bi_nitrogen_fertilization_ml_pipeline.model_training.feature_importance import \
     extract_feature_importance_using_shap
 from bi_nitrogen_fertilization_ml_pipeline.model_training.train_pipeline_report import \
     create_and_save_train_pipeline_report

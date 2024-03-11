@@ -28,10 +28,12 @@ def values_distribution_gini_coefficient_test(series: pd.Series) -> GiniCoeffici
 
 
 def _calc_gini_coefficient(series: pd.Series) -> float:
-    values, counts = np.unique(series, return_counts=True)
-    sorted_counts, sorted_values = zip(*sorted(zip(counts, values)))
-    cum_counts = np.cumsum(sorted_counts)
-    gini_value = 1 - 2 * (np.sum(sorted_counts * cum_counts) / (cum_counts[-1] * np.sum(sorted_counts)))
+    category_indices = {category: i for i, category in enumerate(np.unique(series))}
+    series_value_indices = np.array([category_indices[category] for category in series])
+
+    mad = np.abs(np.subtract.outer(series_value_indices, series_value_indices)).mean()
+    rmad = mad / np.mean(series_value_indices)
+    gini_value = 0.5 * rmad
     return gini_value
 
 

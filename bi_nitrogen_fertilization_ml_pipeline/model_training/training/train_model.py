@@ -132,7 +132,7 @@ def _plot_train_graphs(
     eval_metric_random_guess_value = calculate_evaluation_metric_for_random_guess_predictions(
         y_train,
         y_validation if applied_validation_set_split else y_train,
-        loss_function,
+        eval_metric,
     )
     group_name_to_ordered_epoch_eval_metric_values = {
         'train': train_result_values_per_epoch[keras_name_of_eval_metric],

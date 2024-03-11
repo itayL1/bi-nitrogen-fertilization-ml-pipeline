@@ -13,12 +13,12 @@ scikit-learn = "^1.4.1.post1"
 # install tensorflow-macos is running from mac OS, and tensorflow in any other case
 tensorflow-macos = { version = "^2.15.0", markers = "sys_platform == 'darwin'" }
 tensorflow = { version = "^2.15.0", markers = "sys_platform != 'darwin'" }
-ydata-profiling = "4.1.2"
 pydantic = ">=1.8.1,<1.11"
 humanize = "^4.9.0"
 rich = "^13.7.1"
 datapane = "^0.17.0"
 shap = "^0.45.0"
+matplotlib = "^3.8.3"
 
 
 [tool.poetry.group.dev.dependencies]
