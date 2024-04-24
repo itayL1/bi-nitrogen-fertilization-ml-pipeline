@@ -3,7 +3,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import humanize
 import pandas as pd
 from pydantic import Field, validator
 
@@ -17,14 +16,6 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_valida
 class PipelineExecutionTime(BaseModel):
     pipeline_start_timestamp: Optional[datetime]
     pipeline_end_timestamp: Optional[datetime]
-
-    def get_execution_duration(self) -> Optional[str]:
-        if self.pipeline_start_timestamp is None or self.pipeline_end_timestamp is None:
-            return None
-
-        execution_duration_text = humanize.precisedelta(
-            self.pipeline_start_timestamp - self.pipeline_end_timestamp)
-        return execution_duration_text
 
 
 class ImputationFunnel(BaseModel):

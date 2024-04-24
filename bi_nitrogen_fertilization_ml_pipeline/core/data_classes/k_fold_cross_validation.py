@@ -15,6 +15,7 @@ class DatasetFoldSplit(BaseModel):
 
 
 class FoldModelEvaluationResults(BaseModel):
+    fold_key: str
     evaluation_set_size: int
     train_set_loss: float
     train_set_main_metric: float
@@ -32,7 +33,7 @@ class FoldsResultsAggregation(BaseModel):
 class KFoldCrossValidationResults(BaseModel):
     fold_results: list[FoldModelEvaluationResults]
 
-    def folds_number(self) -> int:
+    def folds_count(self) -> int:
         return len(self.fold_results)
 
     def aggregate_train_set_folds_loss(self) -> FoldsResultsAggregation:

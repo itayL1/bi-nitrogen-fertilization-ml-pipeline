@@ -174,6 +174,7 @@ def _evaluate_fold_model(
     train_random_guess_on_evaluation_set_main_metric = calculate_evaluation_metric_for_random_guess_predictions(
         fold_split.y_train, fold_split.y_evaluation, train_params.evaluation_metric)
     return FoldModelEvaluationResults(
+        fold_key=fold_split.fold_key,
         evaluation_set_size=len(fold_split.y_evaluation),
         train_set_loss=train_set_loss,
         train_set_main_metric=train_set_main_metric,
