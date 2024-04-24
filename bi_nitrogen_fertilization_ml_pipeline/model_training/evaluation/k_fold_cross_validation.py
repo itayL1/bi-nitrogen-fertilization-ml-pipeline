@@ -4,6 +4,7 @@ from typing import Generator, ContextManager, Callable
 
 import pandas as pd
 from keras import Model
+from keras.callbacks import History
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import DatasetFoldSplit, \
     FoldModelEvaluationResults, KFoldCrossValidationResults
@@ -147,20 +148,22 @@ def _run_fold_iteration(
 ) -> FoldModelEvaluationResults:
     fold_model = prepare_new_model_for_training(
         session_context.params, model_input_features_count)
-    train_model(
+    train_history = train_model(
         fold_model,
         X=fold_split.X_train,
         y=fold_split.y_train,
         train_params=session_context.params,
         output_figures_folder_path=train_output_figures_folder,
     )
-    fold_results = _evaluate_fold_model(fold_model, fold_split, session_context)
+    fold_results = _evaluate_fold_model(
+        fold_model, fold_split, train_history, session_context)
     return fold_results
 
 
 def _evaluate_fold_model(
     fold_model: Model,
     fold_split: DatasetFoldSplit,
+    train_history: History,
     session_context: TrainSessionContext,
 ) -> FoldModelEvaluationResults:
     train_set_loss, train_set_main_metric, = _get_fold_model_evaluation_metrics_for_dataset(
@@ -173,8 +176,11 @@ def _evaluate_fold_model(
         fold_split.y_train, fold_split.y_evaluation, train_params.loss_function)
     train_random_guess_on_evaluation_set_main_metric = calculate_evaluation_metric_for_random_guess_predictions(
         fold_split.y_train, fold_split.y_evaluation, train_params.evaluation_metric)
+
+    train_epochs_count = len(next(iter(train_history.history.values())))
     return FoldModelEvaluationResults(
         fold_key=fold_split.fold_key,
+        train_epochs_count=train_epochs_count,
         evaluation_set_size=len(fold_split.y_evaluation),
         train_set_loss=train_set_loss,
         train_set_main_metric=train_set_main_metric,

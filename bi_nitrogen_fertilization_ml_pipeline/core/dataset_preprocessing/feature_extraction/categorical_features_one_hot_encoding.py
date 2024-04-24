@@ -59,7 +59,8 @@ def _fit_one_hot_encoding_for_feature(
             count=len(final_categories),
             values=sorted(final_categories),
         ),
-        categories_distribution=to_displayable_percentage_distribution(final_categories_perc_distribution),
+        categories_frequency=dict(final_feature_col.value_counts()),
+        categories_perc_distribution=to_displayable_percentage_distribution(final_categories_perc_distribution),
         other_category_aggregation=report_other_category_aggregation_details,
     )
     train_artifact_encoding_metadata = OneHotEncodingMetadata(
