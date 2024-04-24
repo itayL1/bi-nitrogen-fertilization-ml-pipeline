@@ -22,7 +22,7 @@ def train_model(
     y: pd.Series,
     train_params: TrainParams,
     output_figures_folder_path: Path,
-) -> None:
+) -> History:
     if train_params.early_stopping is not None:
         applied_validation_set_split = True
         train_history, y_train, y_validation = _fit_model_with_early_stopping(
@@ -41,6 +41,7 @@ def train_model(
         applied_validation_set_split,
         y_validation,
     )
+    return train_history
 
 
 def _fit_model(

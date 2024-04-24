@@ -1,15 +1,16 @@
 from pathlib import Path
+from typing import Iterable
 
+import datapane as dp
 import humanize
 import pandas as pd
-import datapane as dp
 from matplotlib import pyplot as plt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_functions import EvaluationFunctions
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import FoldsResultsAggregation
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
-    PipelineExecutionTime, ReportWarning
+    PipelineExecutionTime, ReportWarning, ImputationFunnel
 
 
 def create_train_report(
@@ -21,6 +22,7 @@ def create_train_report(
 
     report = dp.Report(
         _build_pipeline_summary_page(report_data, train_params),
+        _build_dataset_preprocessing_page(report_data),
         _build_model_evaluation_page(report_data, train_params),
     )
     report.save(str(output_report_html_file_path), open=False)
@@ -62,6 +64,79 @@ def _build_pipeline_summary_page(
     return pipeline_summary_page
 
 
+def _build_dataset_preprocessing_page(
+    report_data: TrainPipelineReportData,
+) -> dp.Page:
+    dataset_preprocessing = report_data.dataset_preprocessing
+    preprocessed_dataset_shape = dataset_preprocessing.preprocessed_input_dataset.shape
+
+    page_details = {
+        'preprocessed dataset size':
+            f'{preprocessed_dataset_shape[0]:,} rows, {preprocessed_dataset_shape[1]:,} columns',
+        'unused dropped columns count': dataset_preprocessing.unused_dropped_columns_count,
+        'imputation funnel':
+            _imputation_funnel_display_text(dataset_preprocessing.imputation_funnel),
+    }
+    page_details_table_df = pd.DataFrame(
+        data=[dict(key=key, value=value) for key, value in page_details.items()]
+    )
+
+    categorical_features_encoding_page_items = (
+        (
+            dp.Text(f"## '{feature_name}' feature categorical encoding "
+                    f"({categorical_encoding_details.encoding_method.value})"),
+
+            dp.Text(f"### categories distribution"),
+            dp.DataTable(pd.DataFrame(data=[
+                dict(category=category, frequency=frequency_perc)
+                for category, frequency_perc
+                in categorical_encoding_details.categories_perc_distribution.items()
+            ])),
+            dp.Plot(
+                _plot_categorical_feature_values_frequency_hist(categorical_encoding_details.categories_frequency),
+                responsive=False,
+            ),
+
+            dp.Text(f"### 'other' category aggregated categories distribution"),
+            dp.DataTable(pd.DataFrame(data=[
+                dict(category=category, frequency=frequency_perc)
+                for category, frequency_perc
+                in categorical_encoding_details.other_category_aggregation.aggregated_categories_distribution.items()
+            ])),
+        )
+        for feature_name, categorical_encoding_details
+        in report_data.dataset_preprocessing.categorical_features_encoding_details.items()
+    )
+    flat_categorical_features_encoding_page_items =\
+        _flat_nested_collection_by_one_level(categorical_features_encoding_page_items)
+
+    dataset_preprocessing_page = dp.Page(
+        title="Dataset Preprocessing",
+        blocks=[
+            dp.Text('## Dataset preprocessing details'),
+            dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
+            *flat_categorical_features_encoding_page_items,
+        ],
+    )
+    return dataset_preprocessing_page
+
+
+def _plot_categorical_feature_values_frequency_hist(
+    categories_frequency: dict[str, int],
+) -> plt.Figure:
+    try:
+        plt.figure(figsize=(8, 6))
+        pd.Series(categories_frequency).plot(kind='bar', color='skyblue', edgecolor='black')
+        plt.title('Categories frequency')
+        plt.xlabel('Category')
+        plt.xticks(rotation=45, ha='left')
+        plt.ylabel('Frequency')
+
+        return plt.gcf()
+    finally:
+        plt.close()
+
+
 def _build_model_evaluation_page(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
@@ -91,14 +166,13 @@ def _build_model_evaluation_page(
         _get_evaluation_folds_key_frequencies_histogram(report_data)
 
     fold_train_models_page_items = _get_folds_models_train_page_items(report_data, train_params)
-
     model_evaluation_page = dp.Page(
         title="Model evaluation",
         blocks=[
             dp.Text('## Model evaluation details'),
             dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
 
-            dp.Plot(evaluation_folds_key_frequencies_hist_figure, responsive=False, scale=1.5),
+            dp.Plot(evaluation_folds_key_frequencies_hist_figure, responsive=False),
 
             *fold_train_models_page_items,
         ],
@@ -121,6 +195,7 @@ def _get_folds_models_train_page_items(
             fold_key_table_col: fold_results.fold_key,
             'train set size': f'{full_dataset_rows_count - fold_results.evaluation_set_size:,}',
             'evaluation set size': f'{fold_results.evaluation_set_size:,}',
+            'train epochs count': fold_results.train_epochs_count,
             f'train set model loss ({loss_function_name})': fold_results.train_set_loss,
             f'train set model {evaluation_metric_name}': fold_results.train_set_main_metric,
             f'evaluation set model loss ({loss_function_name})': fold_results.evaluation_set_loss,
@@ -148,11 +223,8 @@ def _get_folds_models_train_page_items(
         )
         for folder_path in folds_train_figures_subfolders
     )
-    fold_train_figures_page_items_flatted = (
-        page_item
-        for fold_page_items in fold_train_figures_page_items
-        for page_item in fold_page_items
-    )
+    fold_train_figures_page_items_flatted =\
+        _flat_nested_collection_by_one_level(fold_train_figures_page_items)
 
     return (
         dp.Text('## Fold models evaluation results and train graphs'),
@@ -161,11 +233,18 @@ def _get_folds_models_train_page_items(
     )
 
 
+def _imputation_funnel_display_text(imputation_funnel: ImputationFunnel) -> str:
+    return (
+        f'{imputation_funnel.remaining_rows_percentage} rows remained after the imputation funnel '
+        f'(before: {imputation_funnel.rows_count_before_imputation:,} | '
+        f'after: {imputation_funnel.rows_count_after_imputation:,})'
+    )
+
+
 def _get_evaluation_folds_key_frequencies_histogram(report_data: TrainPipelineReportData) -> plt.Figure:
     evaluation_folds_key_col = \
         report_data.dataset_preprocessing.preprocessed_input_dataset['evaluation_folds_key']
     try:
-        # plt.figure(figsize=(4, 3))
         evaluation_folds_key_col.value_counts().plot(kind='bar', color='skyblue', edgecolor='black')
         plt.title('Evaluation Fold key values frequency')
         plt.xlabel('Fold key')
@@ -221,6 +300,14 @@ def _style_df_cells_to_align_left(df: pd.DataFrame):
     return\
         df.style.set_properties(**{'text-align': 'left'}) \
         .set_table_styles([dict(selector='th', props=[('text-align', 'left')])])
+
+
+def _flat_nested_collection_by_one_level(nested_collection: Iterable) -> tuple:
+    return tuple(
+        item
+        for child_collection in nested_collection
+        for item in child_collection
+    )
 
 
 if __name__ == '__main__':

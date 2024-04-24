@@ -59,10 +59,11 @@ class FinalCategories(BaseModel):
 class CategoricalFeatureEncodingDetails(BaseModel):
     encoding_method: CategoricalFeaturesEncodingMethod
     final_categories: FinalCategories
-    categories_distribution: dict[str, str]
+    categories_frequency: dict[str, int]
+    categories_perc_distribution: dict[str, str]
     other_category_aggregation: OtherCategoryAggregationDetails
 
-    @validator('categories_distribution')
+    @validator('categories_perc_distribution')
     def _aggregated_categories_distribution(
         cls, categories_distribution: dict[str, str],
     ) -> dict[str, str]:

@@ -16,6 +16,7 @@ class DatasetFoldSplit(BaseModel):
 
 class FoldModelEvaluationResults(BaseModel):
     fold_key: str
+    train_epochs_count: int
     evaluation_set_size: int
     train_set_loss: float
     train_set_main_metric: float
