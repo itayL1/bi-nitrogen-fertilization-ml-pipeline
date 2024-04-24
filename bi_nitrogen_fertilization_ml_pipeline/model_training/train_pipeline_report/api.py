@@ -14,24 +14,23 @@ def create_and_save_train_pipeline_report(
 ) -> None:
     report_output_root_folder.mkdir(parents=True, exist_ok=True)
 
+    output_dataset_eda_reports_folder = None
+    if train_params.create_dataset_eda_reports:
+        output_dataset_eda_reports_folder = report_output_root_folder / 'EDA_reports'
+        create_preprocessing_datasets_eda_reports(
+            report_data.dataset_preprocessing,
+            output_eda_reports_folder=output_dataset_eda_reports_folder,
+        )
+
     create_train_report(
         report_data, train_params,
+        dataset_eda_reports_folder=output_dataset_eda_reports_folder,
         output_report_html_file_path=report_output_root_folder / 'train_pipeline_report.html',
     )
-
-    train_pipeline_report_dump = \
-        report_data.copy_without_large_members().json(ensure_ascii=False, indent=4)
-    with open(report_output_root_folder / 'train_pipeline_report_dump.json', 'w') as f:
-        f.write(train_pipeline_report_dump)
-
-    # create_preprocessing_datasets_eda_reports(
-    #     report_data.dataset_preprocessing,
-    #     output_eda_reports_folder=report_output_root_folder / 'EDA_reports',
-    # )
 
     report_asserts_folder = report_output_root_folder / 'assets'
     report_asserts_folder.mkdir(parents=False, exist_ok=False)
     report_data.model_training.evaluation_folds_train_figures_root_folder.rename(
         report_asserts_folder / report_data.model_training.evaluation_folds_train_figures_root_folder.name)
-    report_data.model_training.final_model_train_figures_folder.rename(
-        report_asserts_folder / report_data.model_training.final_model_train_figures_folder.name)
+    report_data.model_training.final_model.train_figures_folder.rename(
+        report_asserts_folder / report_data.model_training.final_model.train_figures_folder.name)

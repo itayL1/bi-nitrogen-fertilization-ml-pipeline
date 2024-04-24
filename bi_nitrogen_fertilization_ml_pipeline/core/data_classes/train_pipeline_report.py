@@ -100,11 +100,17 @@ class DatasetPreprocessing(BaseModel):
         return preprocessed_dataset
 
 
+class FinalModel(BaseModel):
+    train_epochs_count: int
+    train_figures_folder: Path
+    feature_importance_summary_figure_path: Path
+
+
 class ModelTraining(BaseModel):
     evaluation_folds_results: Optional[KFoldCrossValidationResults]
     evaluation_folds_distribution_gini_coefficient: Optional[float]
     evaluation_folds_train_figures_root_folder: Optional[Path]
-    final_model_train_figures_folder: Optional[Path]
+    final_model: Optional[FinalModel]
 
 
 class PipelineModules(str, Enum):

@@ -17,6 +17,7 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_gues
     calculate_evaluation_metric_for_random_guess_predictions
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count
 
 
 def key_based_k_fold_cross_validation(
@@ -177,10 +178,9 @@ def _evaluate_fold_model(
     train_random_guess_on_evaluation_set_main_metric = calculate_evaluation_metric_for_random_guess_predictions(
         fold_split.y_train, fold_split.y_evaluation, train_params.evaluation_metric)
 
-    train_epochs_count = len(next(iter(train_history.history.values())))
     return FoldModelEvaluationResults(
         fold_key=fold_split.fold_key,
-        train_epochs_count=train_epochs_count,
+        train_epochs_count=extract_train_epochs_count(train_history),
         evaluation_set_size=len(fold_split.y_evaluation),
         train_set_loss=train_set_loss,
         train_set_main_metric=train_set_main_metric,
