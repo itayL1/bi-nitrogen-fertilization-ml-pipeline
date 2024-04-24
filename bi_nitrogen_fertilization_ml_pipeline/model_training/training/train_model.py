@@ -116,7 +116,7 @@ def _plot_train_graphs(
             {'validation': train_result_values_per_epoch['val_loss']}
             if applied_validation_set_split else {}
         ),
-        'random guess': [loss_func_random_guess_value] * actual_train_epochs_count,
+        'guess (train mean)': [loss_func_random_guess_value] * actual_train_epochs_count,
     }
     plot_evaluation_value_per_training_epoch_graph(
         group_name_to_ordered_epoch_loss_values,
@@ -140,7 +140,7 @@ def _plot_train_graphs(
             {'validation': train_result_values_per_epoch[f'val_{keras_name_of_eval_metric}']}
             if applied_validation_set_split else {}
         ),
-        'random guess': [eval_metric_random_guess_value] * actual_train_epochs_count,
+        'guess (train mean)': [eval_metric_random_guess_value] * actual_train_epochs_count,
     }
     plot_evaluation_value_per_training_epoch_graph(
         group_name_to_ordered_epoch_eval_metric_values,

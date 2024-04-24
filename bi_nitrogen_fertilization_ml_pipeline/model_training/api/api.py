@@ -47,11 +47,11 @@ def train_and_evaluate_model(
 
         session_context.pipeline_main_progress_bar.move_to_next_step(
             TrainPipelineLogicalSteps.generate_pipeline_report)
+        session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
         wip_train_pipeline_report_folder = session_context.wip_outputs_folder_path / 'train_pipeline_report'
         create_and_save_train_pipeline_report(
-            session_context.pipeline_report, wip_train_pipeline_report_folder)
+            session_context.pipeline_report, train_params, wip_train_pipeline_report_folder)
 
-        session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
         _move_wip_files_to_output_paths(
             output_model_file_path, wip_output_model_file, wip_train_pipeline_report_folder)
 
