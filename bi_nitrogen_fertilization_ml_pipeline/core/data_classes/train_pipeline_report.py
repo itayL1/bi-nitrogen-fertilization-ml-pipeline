@@ -100,20 +100,26 @@ class DatasetPreprocessing(BaseModel):
         return preprocessed_dataset
 
 
+class FinalModel(BaseModel):
+    train_epochs_count: int
+    train_figures_folder: Path
+    feature_importance_summary_figure_path: Path
+
+
 class ModelTraining(BaseModel):
     evaluation_folds_results: Optional[KFoldCrossValidationResults]
     evaluation_folds_distribution_gini_coefficient: Optional[float]
     evaluation_folds_train_figures_root_folder: Optional[Path]
-    final_model_train_figures_folder: Optional[Path]
+    final_model: Optional[FinalModel]
 
 
-class PipelineModules(str, Enum):
+class WarningPipelineModules(str, Enum):
     dataset_preprocessing = 'dataset_preprocessing'
     model_training = 'model_training'
 
 
 class ReportWarning(BaseModel):
-    pipeline_module: PipelineModules
+    pipeline_module: WarningPipelineModules
     description: str
     context: Optional[dict]
 
@@ -130,7 +136,7 @@ class TrainPipelineReportData(BaseModel):
         return ret_copy
 
     def add_warning(
-        self, pipeline_module: PipelineModules,
+        self, pipeline_module: WarningPipelineModules,
         description: str, context: Optional[dict] = None,
     ) -> None:
         self.warnings.append(ReportWarning(

@@ -9,7 +9,7 @@ from keras.callbacks import History
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import DatasetFoldSplit, \
     FoldModelEvaluationResults, KFoldCrossValidationResults
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.preprocessed_datasets import PreprocessedTrainDataset
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import PipelineModules
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import WarningPipelineModules
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.utils.statistical_tests import \
     values_distribution_gini_coefficient_test, DistributionBalance
@@ -17,6 +17,7 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_gues
     calculate_evaluation_metric_for_random_guess_predictions
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count
 
 
 def key_based_k_fold_cross_validation(
@@ -58,7 +59,7 @@ def _population_report_with_k_fold_evaluation_stats(
     eval_folds_count = _calc_folds_count(preprocessed_train_dataset)
     if eval_folds_count < 3:
         pipeline_report.add_warning(
-            PipelineModules.model_training,
+            WarningPipelineModules.model_training,
             "the number of evaluation folds is low",
             context={
                 'evaluation_folds_count': eval_folds_count,
@@ -66,7 +67,7 @@ def _population_report_with_k_fold_evaluation_stats(
         )
     elif eval_folds_count > 30:
         pipeline_report.add_warning(
-            PipelineModules.model_training,
+            WarningPipelineModules.model_training,
             "the number of evaluation folds is high",
             context={
                 'evaluation_folds_count': eval_folds_count,
@@ -77,12 +78,13 @@ def _population_report_with_k_fold_evaluation_stats(
     pipeline_report.model_training.evaluation_folds_distribution_gini_coefficient = eval_folds_gini_test_res.gini_coefficient
     if eval_folds_gini_test_res.distribution_balance != DistributionBalance.relatively_balanced:
         pipeline_report.add_warning(
-            PipelineModules.model_training,
+            WarningPipelineModules.model_training,
             "the distribution of the evaluation folds is considered imbalanced "
             "according to the gini coefficient test",
-            context={
-                'evaluation_folds_distribution_gini_coefficient_test_results': eval_folds_gini_test_res,
-            },
+            context=dict(
+                folds_distribution_gini_coefficient=f'{eval_folds_gini_test_res.gini_coefficient:.4f}',
+                distribution_balance=eval_folds_gini_test_res.distribution_balance.value,
+            ),
         )
 
 
@@ -177,10 +179,9 @@ def _evaluate_fold_model(
     train_random_guess_on_evaluation_set_main_metric = calculate_evaluation_metric_for_random_guess_predictions(
         fold_split.y_train, fold_split.y_evaluation, train_params.evaluation_metric)
 
-    train_epochs_count = len(next(iter(train_history.history.values())))
     return FoldModelEvaluationResults(
         fold_key=fold_split.fold_key,
-        train_epochs_count=train_epochs_count,
+        train_epochs_count=extract_train_epochs_count(train_history),
         evaluation_set_size=len(fold_split.y_evaluation),
         train_set_loss=train_set_loss,
         train_set_main_metric=train_set_main_metric,

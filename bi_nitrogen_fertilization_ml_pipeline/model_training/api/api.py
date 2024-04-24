@@ -10,6 +10,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.preprocessed_datase
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import ModelTrainingArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_logical_steps import \
     TrainPipelineLogicalSteps
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import FinalModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.dataset_preprocessing import dataset_preprocessing
 from bi_nitrogen_fertilization_ml_pipeline.model_training.api.setup_train_session_context import train_session_context
@@ -23,6 +24,7 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.train_pipeline_report 
     create_and_save_train_pipeline_report
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.random_seed import set_random_seed_globally
 
 
@@ -100,7 +102,7 @@ def _train_final_model_on_entire_dataset(
     main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_training)
     final_model = prepare_new_model_for_training(
         session_context.params, model_input_features_count)
-    train_model(
+    train_history = train_model(
         final_model,
         X=preprocessed_train_dataset.X,
         y=preprocessed_train_dataset.y,
@@ -109,15 +111,21 @@ def _train_final_model_on_entire_dataset(
     )
 
     main_progress_bar.move_to_next_step(TrainPipelineLogicalSteps.final_model_feature_importance_extraction)
+    feature_importance_summary_figure_path =\
+        final_model_train_figures_folder / 'shap_feature_importance_summary.jpeg'
     extract_feature_importance_using_shap(
         final_model,
         X=preprocessed_train_dataset.X,
-        output_summary_figure_path=final_model_train_figures_folder / 'shap_feature_importance_summary.jpeg',
+        output_summary_figure_path=feature_importance_summary_figure_path,
         random_seed=session_context.params.random_seed,
     )
 
     model_training = session_context.pipeline_report.model_training
-    model_training.final_model_train_figures_folder = final_model_train_figures_folder
+    model_training.final_model = FinalModel(
+        train_epochs_count=extract_train_epochs_count(train_history),
+        train_figures_folder=final_model_train_figures_folder,
+        feature_importance_summary_figure_path=feature_importance_summary_figure_path,
+    )
     return final_model
 
 
