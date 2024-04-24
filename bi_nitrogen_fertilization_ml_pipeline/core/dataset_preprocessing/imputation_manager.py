@@ -2,7 +2,7 @@ import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import ImputationFunnel, \
-    PipelineModules
+    WarningPipelineModules
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage
 
@@ -27,7 +27,7 @@ def train_dataset_imputation(
 
     if remaining_rows_percentage < 95:
         session_context.pipeline_report.add_warning(
-            PipelineModules.dataset_preprocessing,
+            WarningPipelineModules.dataset_preprocessing,
             f'only {to_displayable_percentage(remaining_rows_percentage)} '
             f'of the train dataset rows remained after the imputation funnel',
         )

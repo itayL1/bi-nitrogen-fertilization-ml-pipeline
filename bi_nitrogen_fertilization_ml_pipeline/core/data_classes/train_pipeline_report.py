@@ -113,13 +113,13 @@ class ModelTraining(BaseModel):
     final_model: Optional[FinalModel]
 
 
-class PipelineModules(str, Enum):
+class WarningPipelineModules(str, Enum):
     dataset_preprocessing = 'dataset_preprocessing'
     model_training = 'model_training'
 
 
 class ReportWarning(BaseModel):
-    pipeline_module: PipelineModules
+    pipeline_module: WarningPipelineModules
     description: str
     context: Optional[dict]
 
@@ -136,7 +136,7 @@ class TrainPipelineReportData(BaseModel):
         return ret_copy
 
     def add_warning(
-        self, pipeline_module: PipelineModules,
+        self, pipeline_module: WarningPipelineModules,
         description: str, context: Optional[dict] = None,
     ) -> None:
         self.warnings.append(ReportWarning(

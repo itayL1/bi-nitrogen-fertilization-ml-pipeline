@@ -28,7 +28,7 @@ def _get_test_train_params() -> TrainParams:
         optimizer_builder=keras.optimizers.legacy.Adam,
         random_seed=42,
         silent_models_fitting=True,
-        create_dataset_eda_reports=True,
+        create_dataset_eda_reports=False,
     )
 
 

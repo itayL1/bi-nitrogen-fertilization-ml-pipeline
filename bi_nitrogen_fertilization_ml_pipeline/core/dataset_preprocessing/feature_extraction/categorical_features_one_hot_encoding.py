@@ -9,7 +9,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts imp
     OneHotEncodedFeatures
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import \
     OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod, \
-    FinalCategories, PipelineModules, TrainPipelineReportData
+    FinalCategories, WarningPipelineModules, TrainPipelineReportData
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.pipeline_report.display_utils import to_displayable_percentage, \
     to_displayable_percentage_distribution
@@ -249,19 +249,15 @@ def _add_report_warnings_regarding_encoding_if_needed(
     report_encoding_details: CategoricalFeatureEncodingDetails,
     pipeline_report: TrainPipelineReportData,
 ) -> None:
-    base_warnings_context = {
-        'feature_column': feature_settings.column,
-    }
-
     categories_count_warning_threshold = math.ceil(max_allowed_categories_count * 2 / 3)
     if report_encoding_details.final_categories.count >= categories_count_warning_threshold:
         pipeline_report.add_warning(
-            PipelineModules.dataset_preprocessing,
+            WarningPipelineModules.dataset_preprocessing,
             f"the number of categories in this feature is {report_encoding_details.final_categories.count}, "
-            f"which is relatively high and approaches the limit for this feature",
+            f"which is relatively high and approaches the limit defined for this feature",
             context={
+                'feature_column': feature_settings.column,
                 'feature.max_allowed_categories_count': max_allowed_categories_count,
-                **base_warnings_context,
             },
         )
 
@@ -269,20 +265,22 @@ def _add_report_warnings_regarding_encoding_if_needed(
         final_categories_perc_distribution.get(consts.ONE_HOT_OTHER_CATEGORY, 0)
     if other_category_frequency_percentage > 10:
         pipeline_report.add_warning(
-            PipelineModules.dataset_preprocessing,
+            WarningPipelineModules.dataset_preprocessing,
             f"the percentage of the 'others' category in this feature is "
             f"{to_displayable_percentage(other_category_frequency_percentage)}, which is relatively high",
-            context=base_warnings_context,
+            context={
+                'feature_column': feature_settings.column,
+            },
         )
 
     categories_without_other = final_categories - {consts.ONE_HOT_OTHER_CATEGORY}
     if len(categories_without_other) < 2:
         pipeline_report.add_warning(
-            PipelineModules.dataset_preprocessing,
+            WarningPipelineModules.dataset_preprocessing,
             f"there is no diversity in the categories of this features, when counting out the 'others' category. "
-            f"consider changing the value of min_significant_category_percentage_threshold for this feature.",
+            f"consider changing the value of min_significant_category_percentage_threshold defined for this feature.",
             context={
+                'feature_column': feature_settings.column,
                 'feature.min_significant_category_percentage_threshold': min_significant_category_percentage_threshold,
-                **base_warnings_context,
             },
         )
