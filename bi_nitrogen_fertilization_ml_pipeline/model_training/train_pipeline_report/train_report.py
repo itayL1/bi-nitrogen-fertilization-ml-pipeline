@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import datapane as dp
 import humanize
@@ -10,20 +10,26 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_function
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import FoldsResultsAggregation
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
-    PipelineExecutionTime, ReportWarning, ImputationFunnel
+    PipelineExecutionTime, ReportWarning, ImputationFunnel, WarningPipelineModules
+
+IMAGE_FILE_EXTENSIONS = ('.jpeg', 'jpg', '.png')
 
 
 def create_train_report(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
-    output_report_html_file_path: Path
+    dataset_eda_reports_folder: Optional[Path],
+    output_report_html_file_path: Path,
 ) -> None:
     output_report_html_file_path.parent.mkdir(parents=True, exist_ok=True)
 
     report = dp.Report(
         _build_pipeline_summary_page(report_data, train_params),
+        _build_dataset_eda_page(dataset_eda_reports_folder),
         _build_dataset_preprocessing_page(report_data),
         _build_model_evaluation_page(report_data, train_params),
+        _build_final_model_page(report_data),
+        _build_warnings_page(report_data),
     )
     report.save(str(output_report_html_file_path), open=False)
 
@@ -57,11 +63,37 @@ def _build_pipeline_summary_page(
     pipeline_summary_page = dp.Page(
         title="Summary",
         blocks=[
-            dp.Text('### Summary Details'),
+            dp.Text('## Summary Details'),
             dp.Table(_style_df_cells_to_align_left(summary_details_table_df)),
         ],
     )
     return pipeline_summary_page
+
+
+def _build_dataset_eda_page(
+    dataset_eda_reports_folder: Optional[Path],
+) -> dp.Page:
+    if dataset_eda_reports_folder is None:
+        page_content_blocks = [
+            dp.Text('This section is not available in the current report.'),
+        ]
+    else:
+        page_content_blocks = [
+            dp.Text('## Dataset EDA reports'),
+            dp.Group(
+                *(
+                    dp.Attachment(file=eda_report_file)
+                    for eda_report_file in dataset_eda_reports_folder.iterdir()
+                ),
+                columns=2,
+            )
+        ]
+
+    warnings_page = dp.Page(
+        title="Dataset EDA",
+        blocks=page_content_blocks,
+    )
+    return warnings_page
 
 
 def _build_dataset_preprocessing_page(
@@ -97,12 +129,14 @@ def _build_dataset_preprocessing_page(
                 responsive=False,
             ),
 
-            dp.Text(f"### 'other' category aggregated categories distribution"),
-            dp.DataTable(pd.DataFrame(data=[
-                dict(category=category, frequency=frequency_perc)
-                for category, frequency_perc
-                in categorical_encoding_details.other_category_aggregation.aggregated_categories_distribution.items()
-            ])),
+            *((
+                dp.Text(f"### 'other' category aggregated categories distribution"),
+                dp.DataTable(pd.DataFrame(data=[
+                    dict(category=category, frequency=frequency_perc)
+                    for category, frequency_perc
+                    in categorical_encoding_details.other_category_aggregation.aggregated_categories_distribution.items()
+                ])),
+            ) if any(categorical_encoding_details.other_category_aggregation.aggregated_categories_distribution) else [])
         )
         for feature_name, categorical_encoding_details
         in report_data.dataset_preprocessing.categorical_features_encoding_details.items()
@@ -167,7 +201,7 @@ def _build_model_evaluation_page(
 
     fold_train_models_page_items = _get_folds_models_train_page_items(report_data, train_params)
     model_evaluation_page = dp.Page(
-        title="Model evaluation",
+        title="Model Evaluation",
         blocks=[
             dp.Text('## Model evaluation details'),
             dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
@@ -177,8 +211,74 @@ def _build_model_evaluation_page(
             *fold_train_models_page_items,
         ],
     )
-
     return model_evaluation_page
+
+
+def _build_final_model_page(
+    report_data: TrainPipelineReportData,
+) -> dp.Page:
+    final_model = report_data.model_training.final_model
+
+    final_model_page = dp.Page(
+        title="Final Model",
+        blocks=[
+            dp.Text('## Final model feature importance'),
+            dp.Media(final_model.feature_importance_summary_figure_path),
+
+            dp.Text('## Final model train graphs'),
+            dp.Text(f'### train epochs count: {final_model.train_epochs_count}'),
+            *(
+                dp.Media(folder_child_file)
+                for folder_child_file in final_model.train_figures_folder.iterdir()
+                if (
+                    folder_child_file.suffix in IMAGE_FILE_EXTENSIONS and
+                    folder_child_file != final_model.feature_importance_summary_figure_path
+                )
+            ),
+        ],
+    )
+    return final_model_page
+
+
+def _build_warnings_page(report_data: TrainPipelineReportData) -> dp.Page:
+    if not any(report_data.warnings):
+        page_content_blocks = [
+            dp.Text('No warnings were detected during the train pipeline execution'),
+        ]
+    else:
+        warnings_table_df = pd.DataFrame(data=[
+            {
+                'Pipeline Module': _warning_pipeline_module_display_text(warning.pipeline_module),
+                'Description': warning.description,
+                'Context': _warning_context_display_text(warning.context) if warning.context is not None else '',
+            }
+            for warning in report_data.warnings
+        ])
+        page_content_blocks = [
+            dp.Table(_style_df_cells_to_align_left(warnings_table_df))
+        ]
+
+    warnings_page = dp.Page(
+        title="Warnings",
+        blocks=page_content_blocks,
+    )
+    return warnings_page
+
+
+def _warning_pipeline_module_display_text(warning_pipeline_module: WarningPipelineModules) -> str:
+    if warning_pipeline_module is WarningPipelineModules.dataset_preprocessing:
+        return 'Dataset Preprocessing'
+    elif warning_pipeline_module is WarningPipelineModules.model_training:
+        return 'Model training'
+    else:
+        raise NotImplementedError(f"unknown warning pipeline module: '{warning_pipeline_module}'")
+
+
+def _warning_context_display_text(warning_context: dict) -> str:
+    return ' | '.join(
+        f'{key}: {val}'
+        for key, val in warning_context.items()
+    )
 
 
 def _get_folds_models_train_page_items(
@@ -218,7 +318,7 @@ def _get_folds_models_train_page_items(
             *(
                 dp.Media(folder_child_file)
                 for folder_child_file in folder_path.iterdir()
-                if folder_child_file.suffix in ('.jpeg', 'jpg', '.png')
+                if folder_child_file.suffix in IMAGE_FILE_EXTENSIONS
             )
         )
         for folder_path in folds_train_figures_subfolders
