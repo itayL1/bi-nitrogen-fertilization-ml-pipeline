@@ -107,6 +107,7 @@ class FinalModel(BaseModel):
 
 
 class ModelTraining(BaseModel):
+    model_architecture_summary: Optional[str]
     evaluation_folds_results: Optional[KFoldCrossValidationResults]
     evaluation_folds_distribution_gini_coefficient: Optional[float]
     evaluation_folds_train_figures_root_folder: Optional[Path]

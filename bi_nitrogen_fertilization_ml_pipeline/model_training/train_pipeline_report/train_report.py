@@ -31,6 +31,7 @@ def create_train_report(
         _build_final_model_page(report_data),
         _build_warnings_page(report_data),
     )
+
     report.save(str(output_report_html_file_path), open=False)
 
 
@@ -41,20 +42,21 @@ def _build_pipeline_summary_page(
     training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
     preprocessed_dataset_shape = report_data.dataset_preprocessing.preprocessed_input_dataset.shape
 
+    eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     summary_details = {
-        'K fold cross validation model evaluation sets metric': _display_folds_aggregation(
+        f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
-        'K fold cross validation model train sets metric': _display_folds_aggregation(
+        f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
-        'guess (train set target mean) evaluation sets metric': _display_folds_aggregation(
+        f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'preprocessed dataset size':
             f'{preprocessed_dataset_shape[0]:,} rows, {preprocessed_dataset_shape[1]:,} columns',
-        'evaluation metric name': _get_evaluation_function_display_name(train_params.evaluation_metric),
         'evaluation folds count': training_evaluation_folds_results.folds_count(),
         'pipeline execution duration': _get_pipeline_execution_duration_display_text(
             report_data.pipeline_execution_time),
         'warnings raised': _warnings_raised_display_text(report_data.warnings),
+        'global random seed': train_params.random_seed if train_params.random_seed is not None else 'not set'
     }
     summary_details_table_df = pd.DataFrame(
         data=[dict(key=key, value=value) for key, value in summary_details.items()]
@@ -177,14 +179,14 @@ def _build_model_evaluation_page(
 ) -> dp.Page:
     training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
 
+    eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     page_details = {
-        'K fold cross validation model evaluation sets metric': _display_folds_aggregation(
+        f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
-        'K fold cross validation model train sets metric': _display_folds_aggregation(
+        f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
-        'guess (train set target mean) evaluation sets metric': _display_folds_aggregation(
+        f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
             training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
-        'evaluation metric name': _get_evaluation_function_display_name(train_params.evaluation_metric),
         'loss function name': _get_evaluation_function_display_name(train_params.loss_function),
         'evaluation folds key column':
             f"{train_params.evaluation_folds_key.column}{' (mutated)' if train_params.evaluation_folds_key.values_mapper is not None else ''}",
@@ -218,14 +220,18 @@ def _build_final_model_page(
     report_data: TrainPipelineReportData,
 ) -> dp.Page:
     final_model = report_data.model_training.final_model
+    model_architecture_summary = report_data.model_training.model_architecture_summary
 
     final_model_page = dp.Page(
         title="Final Model",
         blocks=[
+            dp.Text('## Model architecture (Keras summary)'),
+            _multi_line_text_as_html_block(model_architecture_summary),
+
             dp.Text('## Final model feature importance'),
             dp.Media(final_model.feature_importance_summary_figure_path),
 
-            dp.Text('## Final model train graphs'),
+            dp.Text('## Final model training'),
             dp.Text(f'### train epochs count: {final_model.train_epochs_count}'),
             *(
                 dp.Media(folder_child_file)
@@ -275,7 +281,7 @@ def _warning_pipeline_module_display_text(warning_pipeline_module: WarningPipeli
 
 
 def _warning_context_display_text(warning_context: dict) -> str:
-    return ' | '.join(
+    return '  '.join(
         f'{key}: {val}'
         for key, val in warning_context.items()
     )
@@ -393,7 +399,7 @@ def _warnings_raised_display_text(warnings: list[ReportWarning]) -> str:
 
 
 def _display_folds_aggregation(result_aggregation: FoldsResultsAggregation) -> str:
-    return f'{round(result_aggregation.mean, 3)} (std: {round(result_aggregation.std, 3)})'
+    return f'mean: {round(result_aggregation.mean, 3)} (std: {round(result_aggregation.std, 3)})'
 
 
 def _style_df_cells_to_align_left(df: pd.DataFrame):
@@ -410,39 +416,5 @@ def _flat_nested_collection_by_one_level(nested_collection: Iterable) -> tuple:
     )
 
 
-if __name__ == '__main__':
-    import keras.optimizers.legacy
-    from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
-    from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import \
-        EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
-
-    pipeline_file_path_ = '/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/scratch_359_outputs3/train_pipeline_report/train_pipeline_report_dump.json'
-
-    output_report_html_file_path_ = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/bi_nitrogen_fertilization_ml_pipeline/model_training/train_pipeline_report/tmp/dummy_report.html')
-    create_train_report(
-        report_data=TrainPipelineReportData.parse_file(pipeline_file_path_),
-        train_params=TrainParams(
-            model_builder=init_baseline_model,
-            epochs_count=100,
-            # epochs_count=5,
-            evaluation_folds_key=EvaluationFoldsKeySettings(
-                column='year',
-                values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
-            ),
-            early_stopping=TrainEarlyStoppingSettings(
-                validation_set_fraction_size=0.2,
-                tolerance_epochs_count=9,
-                # tolerance_epochs_count=2,
-            ),
-            optimizer_builder=keras.optimizers.legacy.Adam,
-            random_seed=42,
-            silent_models_fitting=True,
-        ),
-        output_report_html_file_path=output_report_html_file_path_,
-    )
-
-    def _open_path_in_browser(file_path: str | Path):
-        import subprocess
-        subprocess.run(f"open -a 'google chrome' '{str(file_path)}'", shell=True)
-
-    _open_path_in_browser(output_report_html_file_path_)
+def _multi_line_text_as_html_block(text: str) -> dp.HTML:
+    return dp.HTML(f'<pre>{text}</pre>')

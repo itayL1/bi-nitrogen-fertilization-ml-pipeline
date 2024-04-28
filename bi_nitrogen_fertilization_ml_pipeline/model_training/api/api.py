@@ -24,7 +24,8 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.train_pipeline_report 
     create_and_save_train_pipeline_report
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
-from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count, \
+    get_model_architecture_summary
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.random_seed import set_random_seed_globally
 
 
@@ -121,6 +122,7 @@ def _train_final_model_on_entire_dataset(
     )
 
     model_training = session_context.pipeline_report.model_training
+    model_training.model_architecture_summary = get_model_architecture_summary(final_model)
     model_training.final_model = FinalModel(
         train_epochs_count=extract_train_epochs_count(train_history),
         train_figures_folder=final_model_train_figures_folder,
