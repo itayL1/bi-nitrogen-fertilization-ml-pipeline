@@ -5,8 +5,7 @@ import pandas as pd
 
 from bi_nitrogen_fertilization_ml_pipeline.core import defaults, consts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeatureKinds, FeatureSettings
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import OneHotEncodingMetadata, \
-    OneHotEncodedFeatures
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import OneHotEncodingMetadata
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import \
     OtherCategoryAggregationDetails, CategoricalFeatureEncodingDetails, CategoricalFeaturesEncodingMethod, \
     FinalCategories, WarningPipelineModules, TrainPipelineReportData

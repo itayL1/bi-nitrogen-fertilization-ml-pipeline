@@ -106,10 +106,17 @@ class FinalModel(BaseModel):
     feature_importance_summary_figure_path: Path
 
 
+class ModelEvaluationFolds(BaseModel):
+    folds_results: Optional[KFoldCrossValidationResults]
+    folds_evaluation_set_y_true_and_pred_csv_path: Optional[Path]
+    folds_distribution_gini_coefficient: Optional[float]
+    folds_train_figures_root_folder: Optional[Path]
+    folds_eval_set_prediction_deviations_graph_file: Optional[Path]
+
+
 class ModelTraining(BaseModel):
-    evaluation_folds_results: Optional[KFoldCrossValidationResults]
-    evaluation_folds_distribution_gini_coefficient: Optional[float]
-    evaluation_folds_train_figures_root_folder: Optional[Path]
+    model_architecture_summary: Optional[str]
+    evaluation_folds: ModelEvaluationFolds = Field(default_factory=ModelEvaluationFolds)
     final_model: Optional[FinalModel]
 
 

@@ -8,7 +8,7 @@ from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_bas
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
-    EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
+    EvaluationFoldsSplitSettings, TrainEarlyStoppingSettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
@@ -30,8 +30,8 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
         params=TrainParams(
             model_builder=init_baseline_model,
             epochs_count=10,
-            evaluation_folds_key=EvaluationFoldsKeySettings(
-                column='year',
+            evaluation_folds_split=EvaluationFoldsSplitSettings(
+                by_key_column='year',
             ),
             early_stopping=TrainEarlyStoppingSettings(
                 validation_set_fraction_size=0.2,

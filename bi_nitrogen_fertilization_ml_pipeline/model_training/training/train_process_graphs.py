@@ -4,11 +4,9 @@ from typing import Optional
 from matplotlib import pyplot as plt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_functions import EvaluationFunctions
+from bi_nitrogen_fertilization_ml_pipeline.core.plot_settings import RECTANGLE_FIGURES_SIZE, SAVE_FIGURES_DPI
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.display_utils import \
     get_evaluation_function_display_name
-
-FIGURES_SIZE = (12, 5)
-SAVE_FIGURES_DPI = 1_000
 
 
 def plot_evaluation_value_per_training_epoch_graph(
@@ -20,7 +18,7 @@ def plot_evaluation_value_per_training_epoch_graph(
     y_axis_min_limit: Optional[float] = None,
     y_axis_max_limit: Optional[float] = None,
 ):
-    fig, ax = plt.subplots(figsize=FIGURES_SIZE)
+    fig, ax = plt.subplots(figsize=RECTANGLE_FIGURES_SIZE)
     try:
         fig.set_dpi(SAVE_FIGURES_DPI)
         ordered_line_names = []

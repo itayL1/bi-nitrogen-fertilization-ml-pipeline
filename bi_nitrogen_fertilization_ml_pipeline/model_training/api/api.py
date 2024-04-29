@@ -24,7 +24,8 @@ from bi_nitrogen_fertilization_ml_pipeline.model_training.train_pipeline_report 
     create_and_save_train_pipeline_report
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.train_model import train_model
-from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count
+from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.keras_utils import extract_train_epochs_count, \
+    get_model_architecture_summary
 from bi_nitrogen_fertilization_ml_pipeline.model_training.utils.random_seed import set_random_seed_globally
 
 
@@ -50,12 +51,17 @@ def train_and_evaluate_model(
         session_context.pipeline_main_progress_bar.move_to_next_step(
             TrainPipelineLogicalSteps.generate_pipeline_report)
         session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
-        wip_train_pipeline_report_folder = session_context.wip_outputs_folder_path / 'train_pipeline_report'
+        wip_train_pipeline_report_file_path = session_context.wip_outputs_folder_path / 'train_pipeline_report.html'
         create_and_save_train_pipeline_report(
-            session_context.pipeline_report, train_params, wip_train_pipeline_report_folder)
+            report_data=session_context.pipeline_report,
+            train_params=train_params,
+            output_report_html_file_path=wip_train_pipeline_report_file_path,
+            wip_outputs_folder_path=session_context.wip_outputs_folder_path,
+        )
 
-        _move_wip_files_to_output_paths(
-            output_model_file_path, wip_output_model_file, wip_train_pipeline_report_folder)
+        _move_relevant_wip_files_to_output_paths(
+            output_model_file_path, wip_output_model_file, wip_train_pipeline_report_file_path
+        )
 
         # todo - add warnings for
         #  * k fold groups not evenly splitted
@@ -121,6 +127,7 @@ def _train_final_model_on_entire_dataset(
     )
 
     model_training = session_context.pipeline_report.model_training
+    model_training.model_architecture_summary = get_model_architecture_summary(final_model)
     model_training.final_model = FinalModel(
         train_epochs_count=extract_train_epochs_count(train_history),
         train_figures_folder=final_model_train_figures_folder,
@@ -129,18 +136,18 @@ def _train_final_model_on_entire_dataset(
     return final_model
 
 
-def _move_wip_files_to_output_paths(
+def _move_relevant_wip_files_to_output_paths(
     output_model_file_path: Path,
     wip_output_model_file: Path,
-    wip_train_pipeline_report_folder: Path,
+    wip_train_pipeline_report_file_path: Path,
 ) -> None:
     main_output_folder = output_model_file_path.parent
-    output_train_report_root_folder = main_output_folder / 'train_pipeline_report'
+    # the train report will be stored at the same folder of the model file
+    output_train_report_file_path = main_output_folder / wip_train_pipeline_report_file_path.name
 
     main_output_folder.mkdir(parents=True, exist_ok=True)
     output_model_file_path.unlink(missing_ok=True)
-    if output_train_report_root_folder.is_dir():
-        shutil.rmtree(output_train_report_root_folder)
+    output_train_report_file_path.unlink(missing_ok=True)
 
     wip_output_model_file.rename(output_model_file_path)
-    wip_train_pipeline_report_folder.rename(output_train_report_root_folder)
+    wip_train_pipeline_report_file_path.rename(output_train_report_file_path)
