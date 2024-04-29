@@ -28,8 +28,8 @@ train_params = TrainParams(
     epochs_count=100,
     # epochs_count=5,
     evaluation_folds_split=EvaluationFoldsSplitSettings(
-        by_key_column='fold_id',
-        # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
+        by_folds_number=5,
+        # by_key_column='fold_id',
     ),
     early_stopping=TrainEarlyStoppingSettings(
         validation_set_fraction_size=0.2,
@@ -46,19 +46,19 @@ features_config = FeaturesConfig(
     target_column='N kg/d',
     features=[
         FeatureSettings(
-            key_column='משק',
+            column='משק',
             kind=FeatureKinds.categorical,
         ),
         FeatureSettings(
-            key_column='עומק',
+            column='עומק',
             kind=FeatureKinds.numeric,
         ),
         FeatureSettings(
-            key_column='קוד  קרקע',
+            column='קוד  קרקע',
             kind=FeatureKinds.categorical,
         ),
         FeatureSettings(
-            key_column='Krab_key_eng',
+            column='Krab_key_eng',
             kind=FeatureKinds.categorical,
         ),
         # FeatureSettings(
@@ -66,7 +66,7 @@ features_config = FeaturesConfig(
         #     kind=FeatureKinds.numeric,
         # ),
         FeatureSettings(
-            key_column='Precip_Gilat',
+            column='Precip_Gilat',
             kind=FeatureKinds.numeric,
         ),
         # *[
@@ -85,9 +85,9 @@ features_config = FeaturesConfig(
 # print('train_dataset_df.shape after', train_dataset_df.shape)
 # asdsad
 
-FOLDS_COUNT = 5
-rng = np.random.default_rng(seed=42)
-train_dataset_df['fold_id'] = rng.integers(1, FOLDS_COUNT + 1, size=train_dataset_df.shape[0])
+# FOLDS_COUNT = 5
+# rng = np.random.default_rng(seed=42)
+# train_dataset_df['fold_id'] = rng.integers(1, FOLDS_COUNT + 1, size=train_dataset_df.shape[0])
 
 if __name__ == '__main__':
     train_and_evaluate_model(

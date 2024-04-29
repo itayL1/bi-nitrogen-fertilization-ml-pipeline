@@ -16,7 +16,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_repo
 IMAGE_FILE_EXTENSIONS = ('.jpeg', 'jpg', '.png')
 
 
-def create_train_report(
+def create_final_train_pipeline_report(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
     dataset_eda_reports_folder: Optional[Path],

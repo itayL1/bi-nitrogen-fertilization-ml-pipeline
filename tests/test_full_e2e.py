@@ -26,7 +26,7 @@ def _get_test_train_params() -> TrainParams:
             # tolerance_epochs_count=2,
         ),
         optimizer_builder=keras.optimizers.legacy.Adam,
-        random_seed=42,
+        random_seed=43,
         silent_models_fitting=True,
         create_dataset_eda_reports=True,
     )

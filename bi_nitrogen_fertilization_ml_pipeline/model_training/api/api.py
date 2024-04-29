@@ -51,12 +51,17 @@ def train_and_evaluate_model(
         session_context.pipeline_main_progress_bar.move_to_next_step(
             TrainPipelineLogicalSteps.generate_pipeline_report)
         session_context.pipeline_report.pipeline_execution_time.pipeline_end_timestamp = datetime.now()
-        wip_train_pipeline_report_folder = session_context.wip_outputs_folder_path / 'train_pipeline_report'
+        wip_train_pipeline_report_file_path = session_context.wip_outputs_folder_path / 'train_pipeline_report.html'
         create_and_save_train_pipeline_report(
-            session_context.pipeline_report, train_params, wip_train_pipeline_report_folder)
+            report_data=session_context.pipeline_report,
+            train_params=train_params,
+            output_report_html_file_path=wip_train_pipeline_report_file_path,
+            wip_outputs_folder_path=session_context.wip_outputs_folder_path,
+        )
 
-        _move_wip_files_to_output_paths(
-            output_model_file_path, wip_output_model_file, wip_train_pipeline_report_folder)
+        _move_relevant_wip_files_to_output_paths(
+            output_model_file_path, wip_output_model_file, wip_train_pipeline_report_file_path
+        )
 
         # todo - add warnings for
         #  * k fold groups not evenly splitted
@@ -131,18 +136,18 @@ def _train_final_model_on_entire_dataset(
     return final_model
 
 
-def _move_wip_files_to_output_paths(
+def _move_relevant_wip_files_to_output_paths(
     output_model_file_path: Path,
     wip_output_model_file: Path,
-    wip_train_pipeline_report_folder: Path,
+    wip_train_pipeline_report_file_path: Path,
 ) -> None:
     main_output_folder = output_model_file_path.parent
-    output_train_report_root_folder = main_output_folder / 'train_pipeline_report'
+    # the train report will be stored at the same folder of the model file
+    output_train_report_file_path = main_output_folder / wip_train_pipeline_report_file_path.name
 
     main_output_folder.mkdir(parents=True, exist_ok=True)
     output_model_file_path.unlink(missing_ok=True)
-    if output_train_report_root_folder.is_dir():
-        shutil.rmtree(output_train_report_root_folder)
+    output_train_report_file_path.unlink(missing_ok=True)
 
     wip_output_model_file.rename(output_model_file_path)
-    wip_train_pipeline_report_folder.rename(output_train_report_root_folder)
+    wip_train_pipeline_report_file_path.rename(output_train_report_file_path)
