@@ -25,9 +25,7 @@ def train_session_context(
         tempfile.TemporaryDirectory() as session_wip_outputs_folder_path,
         Progress() as rich_progress,
     ):
-        pipeline_main_progress_bar = TrainPipelineMainProgressBarManager(
-            rich_progress=rich_progress,
-        )
+        pipeline_main_progress_bar = TrainPipelineMainProgressBarManager(rich_progress)
         yield TrainSessionContext(
             artifacts=TrainArtifacts(
                 features_config=features_config,

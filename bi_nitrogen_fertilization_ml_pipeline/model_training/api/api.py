@@ -1,10 +1,9 @@
-import shutil
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-import rich
 from keras import Model
+from rich.console import Console
 
 from bi_nitrogen_fertilization_ml_pipeline.core import model_storage
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.preprocessed_datasets import PreprocessedTrainDataset
@@ -63,6 +62,7 @@ def train_and_evaluate_model(
         _move_relevant_wip_files_to_output_paths(
             output_model_file_path, wip_output_model_file, wip_train_pipeline_report_file_path
         )
+        session_context.pipeline_main_progress_bar.move_to_completed()
     _print_pipeline_finished_successfully_message()
 
 
@@ -149,5 +149,5 @@ def _move_relevant_wip_files_to_output_paths(
 
 
 def _print_pipeline_finished_successfully_message() -> None:
-    console = rich.Console()
+    console = Console()
     console.print('[bright_green]The pipeline has concluded without any issues.[/bright_green]')
