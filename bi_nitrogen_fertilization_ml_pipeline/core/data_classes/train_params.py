@@ -21,9 +21,9 @@ class EvaluationFoldsSplitSettings(BaseModel):
     @root_validator()
     def _exactly_one_option_is_used(cls, values: dict[str, Any]) -> dict[str, Any]:
         if values['key_column'] is None and values['folds_number'] is None:
-            raise ValueError('exactly one of the properties must be set (key_column or folds_number)')
+            raise ValueError('exactly one of the properties must be set (by_key_column or by_folds_number)')
         if values['key_column'] is not None and values['folds_number'] is not None:
-            raise ValueError('only one of the properties must be set, but not both (key_column or folds_number)')
+            raise ValueError('only one of the properties must be set, but not both (by_key_column or by_folds_number)')
         return values
 
 
