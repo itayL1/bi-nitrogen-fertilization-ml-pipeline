@@ -37,17 +37,17 @@ def plot_folds_eval_sets_prediction_deviations_graph(
         actual_deviations_scatter_x = zero_deviations_line_x
         actual_deviations_scatter_y = zero_deviations_line_y + folds_eval_set_prediction_deviations
 
-        ax1.plot(zero_deviations_line_x, zero_deviations_line_y, color='black', linewidth=1)
+        ax1.plot(zero_deviations_line_x, zero_deviations_line_y, color='black', linewidth=1, label='Zero deviation')
         ax1.scatter(actual_deviations_scatter_x, actual_deviations_scatter_y, color='blue', label='Deviations')
         ax1.set_xlabel('Sample Index')
-        ax1.set_ylabel('Deviation')
+        ax1.set_ylabel('Prediction Deviation')
         ax1.set_title('Option 1')
         ax1.legend()
 
         ax2.axhline(0, color='black', linewidth=1, label='Zero deviation')
         ax2.scatter(range(len(folds_eval_set_prediction_deviations)), folds_eval_set_prediction_deviations, color='blue', label='Deviations')
         ax2.set_xlabel('Sample Index')
-        ax2.set_ylabel('Deviation')
+        ax2.set_ylabel('Prediction Deviation')
         ax2.set_title('Option 2')
         ax2.legend()
         # ax2.grid(True)

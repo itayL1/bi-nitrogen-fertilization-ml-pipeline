@@ -24,8 +24,3 @@ def validate_percentage_str(value: str, validate_between_0_and_100: bool) -> Non
 def validate_percentage_distribution_dict(percentage_distribution: dict[str, str]) -> None:
     for perc_val in percentage_distribution.values():
         validate_percentage_str(perc_val, validate_between_0_and_100=True)
-
-
-def validate_function_accepts_exactly_1_argument(func: Callable):
-    if func.__code__.co_argcount != 1:
-        raise ValueError("values_mapper must take exactly one argument.")

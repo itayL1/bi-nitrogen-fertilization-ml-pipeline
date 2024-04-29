@@ -6,7 +6,7 @@ from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_bas
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig, FeatureSettings, \
     FeatureKinds
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
-    TrainEarlyStoppingSettings, EvaluationFoldsKeySettings
+    TrainEarlyStoppingSettings, EvaluationFoldsSplitSettings
 from bi_nitrogen_fertilization_ml_pipeline.main_api import train_and_evaluate_model
 
 column_dtypes = {
@@ -27,8 +27,8 @@ train_params = TrainParams(
     model_builder=init_baseline_model,
     epochs_count=100,
     # epochs_count=5,
-    evaluation_folds_key=EvaluationFoldsKeySettings(
-        column='fold_id',
+    evaluation_folds_split=EvaluationFoldsSplitSettings(
+        by_key_column='fold_id',
         # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
     ),
     early_stopping=TrainEarlyStoppingSettings(
@@ -46,19 +46,19 @@ features_config = FeaturesConfig(
     target_column='N kg/d',
     features=[
         FeatureSettings(
-            column='משק',
+            key_column='משק',
             kind=FeatureKinds.categorical,
         ),
         FeatureSettings(
-            column='עומק',
+            key_column='עומק',
             kind=FeatureKinds.numeric,
         ),
         FeatureSettings(
-            column='קוד  קרקע',
+            key_column='קוד  קרקע',
             kind=FeatureKinds.categorical,
         ),
         FeatureSettings(
-            column='Krab_key_eng',
+            key_column='Krab_key_eng',
             kind=FeatureKinds.categorical,
         ),
         # FeatureSettings(
@@ -66,7 +66,7 @@ features_config = FeaturesConfig(
         #     kind=FeatureKinds.numeric,
         # ),
         FeatureSettings(
-            column='Precip_Gilat',
+            key_column='Precip_Gilat',
             kind=FeatureKinds.numeric,
         ),
         # *[

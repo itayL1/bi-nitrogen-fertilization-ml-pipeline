@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_functions import EvaluationFunctions
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import FoldsResultsAggregation
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
+    EvaluationFoldsSplitSettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime, ReportWarning, ImputationFunnel, WarningPipelineModules
 
@@ -188,8 +189,8 @@ def _build_model_evaluation_page(
         f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
             evaluation_folds.folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'loss function name': _get_evaluation_function_display_name(train_params.loss_function),
-        'evaluation folds key column':
-            f"{train_params.evaluation_folds_key.column}{' (mutated)' if train_params.evaluation_folds_key.values_mapper is not None else ''}",
+        'evaluation folds split setup':
+            _evaluation_folds_split_setup_display_text(train_params.evaluation_folds_split),
         'evaluation folds count': evaluation_folds.folds_results.folds_count(),
         'folds distribution GINI coefficient':
             f'{report_data.model_training.evaluation_folds.folds_distribution_gini_coefficient:.4f}'
@@ -199,28 +200,28 @@ def _build_model_evaluation_page(
     )
 
     evaluation_folds_key_frequencies_hist_figure =\
-        _get_evaluation_folds_key_frequencies_histogram(report_data)
+        _get_evaluation_folds_key_frequencies_histogram(report_data, train_params)
 
     fold_train_models_page_items = _get_folds_models_train_page_items(report_data, train_params)
-
     model_evaluation_page = dp.Page(
         title="Model Evaluation",
         blocks=[
+            dp.Text('## Model evaluation details'),
+            dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
+
+            dp.Plot(evaluation_folds_key_frequencies_hist_figure, responsive=False),
+
             dp.Text('## Regression errors graph'),
             dp.Text('### Deviations of fold models evaluation set predictions from true values'),
             dp.Group(
                 dp.Attachment(
                     file=evaluation_folds.folds_evaluation_set_y_true_and_pred_csv_path,
-                    caption='this file contains the data points that were used to produce the following graph',
+                    caption='this file contains the data points that were used to produce ' +
+                            'the following graph',
                 ),
                 columns=2,
             ),
             dp.Media(evaluation_folds.folds_eval_set_prediction_deviations_graph_file),
-
-            dp.Text('## Model evaluation details'),
-            dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
-
-            dp.Plot(evaluation_folds_key_frequencies_hist_figure, responsive=False),
 
             *fold_train_models_page_items,
         ],
@@ -308,10 +309,17 @@ def _get_folds_models_train_page_items(
     evaluation_metric_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     full_dataset_rows_count = report_data.dataset_preprocessing.preprocessed_input_dataset.shape[0]
 
-    fold_key_table_col = f'fold key ({train_params.evaluation_folds_key.column})'
+    evaluation_folds_split = train_params.evaluation_folds_split
+    if evaluation_folds_split.key_column is not None:
+        fold_id_table_col = f'fold key ({evaluation_folds_split.key_column})'
+    elif evaluation_folds_split.folds_number is not None:
+        fold_id_table_col = 'fold id (random split)'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
+
     fold_evaluation_results_table_rows = [
         {
-            fold_key_table_col: fold_results.fold_key,
+            fold_id_table_col: fold_results.fold_key,
             'train set size': f'{full_dataset_rows_count - fold_results.evaluation_set_size:,}',
             'evaluation set size': f'{fold_results.evaluation_set_size:,}',
             'train epochs count': fold_results.train_epochs_count,
@@ -326,7 +334,7 @@ def _get_folds_models_train_page_items(
     ]
     fold_evaluation_results_table_df =\
         pd.DataFrame(fold_evaluation_results_table_rows)\
-        .sort_values(by=fold_key_table_col)\
+        .sort_values(by=fold_id_table_col)\
         .round(3)
 
     folds_train_figures_root_folder = evaluation_folds.folds_train_figures_root_folder
@@ -339,7 +347,7 @@ def _get_folds_models_train_page_items(
                 if folder_child_file.suffix in IMAGE_FILE_EXTENSIONS
             )
         )
-        for folder_path in folds_train_figures_root_folder.iterdir()
+        for folder_path in sorted(folds_train_figures_root_folder.iterdir())
     )
     fold_train_figures_page_items_flatted =\
         _flat_nested_collection_by_one_level(fold_train_figures_page_items)
@@ -359,12 +367,27 @@ def _imputation_funnel_display_text(imputation_funnel: ImputationFunnel) -> str:
     )
 
 
-def _get_evaluation_folds_key_frequencies_histogram(report_data: TrainPipelineReportData) -> plt.Figure:
+def _get_evaluation_folds_key_frequencies_histogram(
+    report_data: TrainPipelineReportData,
+    train_params: TrainParams,
+) -> plt.Figure:
     evaluation_folds_key_col = \
         report_data.dataset_preprocessing.preprocessed_input_dataset['evaluation_folds_key']
+
+    evaluation_folds_split = train_params.evaluation_folds_split
+    if evaluation_folds_split.key_column is not None:
+        graph_title = 'Evaluation fold key values frequency'
+    elif evaluation_folds_split.folds_number is not None:
+        graph_title = 'Evaluation fold sizes'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
+
     try:
-        evaluation_folds_key_col.value_counts().plot(kind='bar', color='skyblue', edgecolor='black')
-        plt.title('Evaluation Fold key values frequency')
+        evaluation_fold_keys_frequency = evaluation_folds_key_col.value_counts()
+        evaluation_fold_keys_frequency.sort_index().plot(
+            kind='bar', color='skyblue', edgecolor='black',
+        )
+        plt.title(graph_title)
         plt.xlabel('Fold key')
         plt.xticks(rotation=45, ha='left')
         plt.ylabel('Frequency')
@@ -408,6 +431,15 @@ def _warnings_raised_display_text(warnings: list[ReportWarning]) -> str:
         return 'No'
     else:
         return f'Yes ({len(warnings)} in total)'
+
+
+def _evaluation_folds_split_setup_display_text(evaluation_folds_split: EvaluationFoldsSplitSettings) -> str:
+    if evaluation_folds_split.key_column is not None:
+        return f"by the key column '{evaluation_folds_split.key_column}'"
+    elif evaluation_folds_split.folds_number is not None:
+        return 'random split'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
 
 
 def _display_folds_aggregation(result_aggregation: FoldsResultsAggregation) -> str:

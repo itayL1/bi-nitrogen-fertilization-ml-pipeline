@@ -7,7 +7,7 @@ from pathlib import Path
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeaturesConfig
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, EvaluationFoldsKeySettings
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, EvaluationFoldsSplitSettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
@@ -25,8 +25,8 @@ def _init_train_session_context(features_config: FeaturesConfig) -> TrainSession
         params=TrainParams(
             model_builder=init_baseline_model,
             epochs_count=3,
-            evaluation_folds_key=EvaluationFoldsKeySettings(
-                column='year',
+            evaluation_folds_split=EvaluationFoldsSplitSettings(
+                by_key_column='year',
             ),
         ),
         pipeline_report=TrainPipelineReportData(

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.features_config import FeatureKinds
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_artifacts import TrainArtifacts
@@ -48,16 +49,20 @@ def extract_evaluation_folds_key(
     raw_train_dataset_df: pd.DataFrame,
     train_params: TrainParams,
 ) -> pd.Series:
-    evaluation_folds_key_settings = train_params.evaluation_folds_key
-    validate_dataframe_has_column(raw_train_dataset_df, evaluation_folds_key_settings.column)
+    evaluation_folds_split = train_params.evaluation_folds_split
+    if evaluation_folds_split.key_column is not None:
+        validate_dataframe_has_column(raw_train_dataset_df, evaluation_folds_split.key_column)
+        evaluation_folds_key_col = raw_train_dataset_df[evaluation_folds_split.key_column].copy()
+    elif evaluation_folds_split.folds_number is not None:
+        dataset_rows_count = raw_train_dataset_df.shape[0]
+        evaluation_folds_key_col = pd.Series(np.random.randint(
+            low=0, high=evaluation_folds_split.folds_number, size=dataset_rows_count,
+        ))
+    else:
+        raise AssertionError('the evaluation folds split is misconfigured')
 
-    evaluation_folds_key_col = raw_train_dataset_df[evaluation_folds_key_settings.column].copy()
     # for simplicity’s sake, treat the values of this key column as strings
     evaluation_folds_key_col = evaluation_folds_key_col.astype(str)
-    if evaluation_folds_key_settings.values_mapper is not None:
-        evaluation_folds_key_col = evaluation_folds_key_col.apply(
-            evaluation_folds_key_settings.values_mapper)
-
     return evaluation_folds_key_col
 
 

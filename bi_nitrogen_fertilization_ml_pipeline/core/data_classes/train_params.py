@@ -1,14 +1,12 @@
-from typing import Optional, Callable
+from typing import Optional, Callable, Any
 
-from pydantic import validator, confloat, PositiveInt, Field
+from pydantic import validator, confloat, PositiveInt, Field, root_validator
 import keras
 from keras.optimizers import Optimizer
 
 from bi_nitrogen_fertilization_ml_pipeline.core import defaults
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.base_model import BaseModel
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_functions import EvaluationFunctions
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.field_utils import not_empty_str, \
-    validate_function_accepts_exactly_1_argument
 
 
 class TrainEarlyStoppingSettings(BaseModel):
@@ -16,17 +14,17 @@ class TrainEarlyStoppingSettings(BaseModel):
     tolerance_epochs_count: PositiveInt
 
 
-class EvaluationFoldsKeySettings(BaseModel):
-    column: not_empty_str
-    values_mapper: Optional[Callable[[str], str]]
+class EvaluationFoldsSplitSettings(BaseModel):
+    key_column: Optional[str] = Field(alias='by_key_column')
+    folds_number: Optional[int] = Field(alias='by_folds_number')
 
-    @validator('values_mapper')
-    def _values_mapper_validator(
-        cls, values_mapper: Optional[Callable[[str], str]],
-    ) -> Optional[Callable[[str], str]]:
-        if values_mapper is not None:
-            validate_function_accepts_exactly_1_argument(values_mapper)
-        return values_mapper
+    @root_validator()
+    def _exactly_one_option_is_used(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if values['key_column'] is None and values['folds_number'] is None:
+            raise ValueError('exactly one of the properties must be set (key_column or folds_number)')
+        if values['key_column'] is not None and values['folds_number'] is not None:
+            raise ValueError('only one of the properties must be set, but not both (key_column or folds_number)')
+        return values
 
 
 class TrainParams(BaseModel):
@@ -36,7 +34,7 @@ class TrainParams(BaseModel):
     optimizer_builder: Callable[[], Optimizer] = Field(default=defaults.ADAM_OPTIMIZER)
     epochs_count: int
     early_stopping: Optional[TrainEarlyStoppingSettings]
-    evaluation_folds_key: EvaluationFoldsKeySettings
+    evaluation_folds_split: EvaluationFoldsSplitSettings
     random_seed: Optional[int]
-    silent_models_fitting: Optional[bool] = False
-    create_dataset_eda_reports: Optional[bool] = True
+    silent_models_fitting: Optional[bool] = Field(default=True)
+    create_dataset_eda_reports: Optional[bool] = Field(default=True)

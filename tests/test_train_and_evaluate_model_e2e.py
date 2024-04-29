@@ -4,7 +4,7 @@ import keras.optimizers.legacy
 
 from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
-    EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
+    EvaluationFoldsSplitSettings, TrainEarlyStoppingSettings
 from bi_nitrogen_fertilization_ml_pipeline.main_api import train_and_evaluate_model
 from tests.utils.test_datasets import load_Nitrogen_with_Era5_and_NDVI_dataset, \
     default_Nitrogen_with_Era5_and_NDVI_dataset_features_config
@@ -17,8 +17,8 @@ def _get_test_train_params() -> TrainParams:
         model_builder=init_baseline_model,
         # epochs_count=100,
         epochs_count=5,
-        evaluation_folds_key=EvaluationFoldsKeySettings(
-            column='year',
+        evaluation_folds_split=EvaluationFoldsSplitSettings(
+            by_key_column='year',
             # values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
         ),
         early_stopping=TrainEarlyStoppingSettings(

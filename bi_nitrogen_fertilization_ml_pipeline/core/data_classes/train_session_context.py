@@ -22,8 +22,12 @@ class TrainSessionContext(BaseModel):
     pipeline_main_progress_bar: TrainPipelineMainProgressBarManager
 
     def get_raw_dataset_columns_required_for_training(self) -> tuple[str, ...]:
+        evaluation_folds_split = self.params.evaluation_folds_split
+
         return (
             self.artifacts.features_config.target_column,
-            self.params.evaluation_folds_key.column,
+            *(
+                [evaluation_folds_split.key_column] if evaluation_folds_split.key_column is not None else []
+            ),
             *self.artifacts.features_config.get_feature_columns(),
         )

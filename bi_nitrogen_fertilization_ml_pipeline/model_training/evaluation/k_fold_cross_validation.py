@@ -147,7 +147,10 @@ def _setup_fold_train_output_figures_folder(
     folds_train_figures_folder: Path,
     session_context: TrainSessionContext,
 ) -> Path:
-    folds_key_field_name = session_context.params.evaluation_folds_key.column
+    evaluation_folds_split = session_context.params.evaluation_folds_split
+    folds_key_field_name =\
+        'random_split' if evaluation_folds_split.folds_number is not None\
+        else evaluation_folds_split.key_column
     fold_train_output_figures_folder =\
         folds_train_figures_folder / f'fold__{folds_key_field_name}_{fold_key}'
 
