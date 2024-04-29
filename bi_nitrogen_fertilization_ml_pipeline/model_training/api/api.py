@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import rich
 from keras import Model
 
 from bi_nitrogen_fertilization_ml_pipeline.core import model_storage
@@ -62,13 +63,7 @@ def train_and_evaluate_model(
         _move_relevant_wip_files_to_output_paths(
             output_model_file_path, wip_output_model_file, wip_train_pipeline_report_file_path
         )
-
-        # todo - add warnings for
-        #  * k fold groups not evenly splitted
-        #  * too many k fold groups
-        #  * feature importance not proportional
-        #  * high std in k fold
-        #  * final training close to random guess
+    _print_pipeline_finished_successfully_message()
 
 
 def _run_train_and_evaluation_session(
@@ -151,3 +146,8 @@ def _move_relevant_wip_files_to_output_paths(
 
     wip_output_model_file.rename(output_model_file_path)
     wip_train_pipeline_report_file_path.rename(output_train_report_file_path)
+
+
+def _print_pipeline_finished_successfully_message() -> None:
+    console = rich.Console()
+    console.print('[bright_green]The pipeline has concluded without any issues.[/bright_green]')
