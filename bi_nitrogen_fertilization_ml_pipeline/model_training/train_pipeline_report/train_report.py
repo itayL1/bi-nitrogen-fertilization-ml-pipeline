@@ -8,14 +8,15 @@ from matplotlib import pyplot as plt
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.evaluation_functions import EvaluationFunctions
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.k_fold_cross_validation import FoldsResultsAggregation
-from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams
+from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import TrainParams, \
+    EvaluationFoldsSplitSettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime, ReportWarning, ImputationFunnel, WarningPipelineModules
 
 IMAGE_FILE_EXTENSIONS = ('.jpeg', 'jpg', '.png')
 
 
-def create_train_report(
+def create_final_train_pipeline_report(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
     dataset_eda_reports_folder: Optional[Path],
@@ -31,6 +32,7 @@ def create_train_report(
         _build_final_model_page(report_data),
         _build_warnings_page(report_data),
     )
+
     report.save(str(output_report_html_file_path), open=False)
 
 
@@ -38,23 +40,24 @@ def _build_pipeline_summary_page(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ) -> dp.Page:
-    training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
+    evaluation_folds = report_data.model_training.evaluation_folds
     preprocessed_dataset_shape = report_data.dataset_preprocessing.preprocessed_input_dataset.shape
 
+    eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     summary_details = {
-        'K fold cross validation model evaluation sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
-        'K fold cross validation model train sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
-        'guess (train set target mean) evaluation sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
+        f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_evaluation_set_folds_main_metric()),
+        f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_train_set_folds_main_metric()),
+        f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'preprocessed dataset size':
             f'{preprocessed_dataset_shape[0]:,} rows, {preprocessed_dataset_shape[1]:,} columns',
-        'evaluation metric name': _get_evaluation_function_display_name(train_params.evaluation_metric),
-        'evaluation folds count': training_evaluation_folds_results.folds_count(),
+        'evaluation folds count': evaluation_folds.folds_results.folds_count(),
         'pipeline execution duration': _get_pipeline_execution_duration_display_text(
             report_data.pipeline_execution_time),
         'warnings raised': _warnings_raised_display_text(report_data.warnings),
+        'global random seed': train_params.random_seed if train_params.random_seed is not None else 'not set'
     }
     summary_details_table_df = pd.DataFrame(
         data=[dict(key=key, value=value) for key, value in summary_details.items()]
@@ -175,29 +178,29 @@ def _build_model_evaluation_page(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ) -> dp.Page:
-    training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
+    evaluation_folds = report_data.model_training.evaluation_folds
 
+    eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     page_details = {
-        'K fold cross validation model evaluation sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
-        'K fold cross validation model train sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
-        'guess (train set target mean) evaluation sets metric': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
-        'evaluation metric name': _get_evaluation_function_display_name(train_params.evaluation_metric),
+        f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_evaluation_set_folds_main_metric()),
+        f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_train_set_folds_main_metric()),
+        f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
+            evaluation_folds.folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'loss function name': _get_evaluation_function_display_name(train_params.loss_function),
-        'evaluation folds key column':
-            f"{train_params.evaluation_folds_key.column}{' (mutated)' if train_params.evaluation_folds_key.values_mapper is not None else ''}",
-        'evaluation folds count': training_evaluation_folds_results.folds_count(),
+        'evaluation folds split setup':
+            _evaluation_folds_split_setup_display_text(train_params.evaluation_folds_split),
+        'evaluation folds count': evaluation_folds.folds_results.folds_count(),
         'folds distribution GINI coefficient':
-            f'{report_data.model_training.evaluation_folds_distribution_gini_coefficient:.4f}'
+            f'{report_data.model_training.evaluation_folds.folds_distribution_gini_coefficient:.4f}'
     }
     page_details_table_df = pd.DataFrame(
         data=[dict(key=key, value=value) for key, value in page_details.items()]
     )
 
     evaluation_folds_key_frequencies_hist_figure =\
-        _get_evaluation_folds_key_frequencies_histogram(report_data)
+        _get_evaluation_folds_key_frequencies_histogram(report_data, train_params)
 
     fold_train_models_page_items = _get_folds_models_train_page_items(report_data, train_params)
     model_evaluation_page = dp.Page(
@@ -207,6 +210,18 @@ def _build_model_evaluation_page(
             dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
 
             dp.Plot(evaluation_folds_key_frequencies_hist_figure, responsive=False),
+
+            dp.Text('## Regression errors graph'),
+            dp.Text('### Deviations of fold models evaluation set predictions from true values'),
+            dp.Group(
+                dp.Attachment(
+                    file=evaluation_folds.folds_evaluation_set_y_true_and_pred_csv_path,
+                    caption='this file contains the data points that were used to produce ' +
+                            'the following graph',
+                ),
+                columns=2,
+            ),
+            dp.Media(evaluation_folds.folds_eval_set_prediction_deviations_graph_file),
 
             *fold_train_models_page_items,
         ],
@@ -218,14 +233,18 @@ def _build_final_model_page(
     report_data: TrainPipelineReportData,
 ) -> dp.Page:
     final_model = report_data.model_training.final_model
+    model_architecture_summary = report_data.model_training.model_architecture_summary
 
     final_model_page = dp.Page(
         title="Final Model",
         blocks=[
+            dp.Text('## Model architecture (Keras summary)'),
+            _multi_line_text_as_html_block(model_architecture_summary),
+
             dp.Text('## Final model feature importance'),
             dp.Media(final_model.feature_importance_summary_figure_path),
 
-            dp.Text('## Final model train graphs'),
+            dp.Text('## Final model training'),
             dp.Text(f'### train epochs count: {final_model.train_epochs_count}'),
             *(
                 dp.Media(folder_child_file)
@@ -275,7 +294,7 @@ def _warning_pipeline_module_display_text(warning_pipeline_module: WarningPipeli
 
 
 def _warning_context_display_text(warning_context: dict) -> str:
-    return ' | '.join(
+    return '  '.join(
         f'{key}: {val}'
         for key, val in warning_context.items()
     )
@@ -285,14 +304,22 @@ def _get_folds_models_train_page_items(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ):
+    evaluation_folds = report_data.model_training.evaluation_folds
     loss_function_name = _get_evaluation_function_display_name(train_params.loss_function)
     evaluation_metric_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     full_dataset_rows_count = report_data.dataset_preprocessing.preprocessed_input_dataset.shape[0]
 
-    fold_key_table_col = f'fold key ({train_params.evaluation_folds_key.column})'
+    evaluation_folds_split = train_params.evaluation_folds_split
+    if evaluation_folds_split.key_column is not None:
+        fold_id_table_col = f'fold key ({evaluation_folds_split.key_column})'
+    elif evaluation_folds_split.folds_number is not None:
+        fold_id_table_col = 'fold id (random split)'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
+
     fold_evaluation_results_table_rows = [
         {
-            fold_key_table_col: fold_results.fold_key,
+            fold_id_table_col: fold_results.fold_key,
             'train set size': f'{full_dataset_rows_count - fold_results.evaluation_set_size:,}',
             'evaluation set size': f'{fold_results.evaluation_set_size:,}',
             'train epochs count': fold_results.train_epochs_count,
@@ -303,15 +330,14 @@ def _get_folds_models_train_page_items(
             f'guess evaluation set loss ({loss_function_name})': fold_results.train_random_guess_on_evaluation_set_loss,
             f'guess evaluation set {evaluation_metric_name}': fold_results.train_random_guess_on_evaluation_set_main_metric,
         }
-        for fold_results in report_data.model_training.evaluation_folds_results.fold_results
+        for fold_results in evaluation_folds.folds_results.fold_results
     ]
     fold_evaluation_results_table_df =\
         pd.DataFrame(fold_evaluation_results_table_rows)\
-        .sort_values(by=fold_key_table_col)\
+        .sort_values(by=fold_id_table_col)\
         .round(3)
 
-    folds_train_figures_subfolders = \
-        report_data.model_training.evaluation_folds_train_figures_root_folder.iterdir()
+    folds_train_figures_root_folder = evaluation_folds.folds_train_figures_root_folder
     fold_train_figures_page_items = (
         (
             dp.Text(f"### {folder_path.name}"),
@@ -321,7 +347,7 @@ def _get_folds_models_train_page_items(
                 if folder_child_file.suffix in IMAGE_FILE_EXTENSIONS
             )
         )
-        for folder_path in folds_train_figures_subfolders
+        for folder_path in sorted(folds_train_figures_root_folder.iterdir())
     )
     fold_train_figures_page_items_flatted =\
         _flat_nested_collection_by_one_level(fold_train_figures_page_items)
@@ -341,12 +367,27 @@ def _imputation_funnel_display_text(imputation_funnel: ImputationFunnel) -> str:
     )
 
 
-def _get_evaluation_folds_key_frequencies_histogram(report_data: TrainPipelineReportData) -> plt.Figure:
+def _get_evaluation_folds_key_frequencies_histogram(
+    report_data: TrainPipelineReportData,
+    train_params: TrainParams,
+) -> plt.Figure:
     evaluation_folds_key_col = \
         report_data.dataset_preprocessing.preprocessed_input_dataset['evaluation_folds_key']
+
+    evaluation_folds_split = train_params.evaluation_folds_split
+    if evaluation_folds_split.key_column is not None:
+        graph_title = 'Evaluation fold key values frequency'
+    elif evaluation_folds_split.folds_number is not None:
+        graph_title = 'Evaluation fold sizes'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
+
     try:
-        evaluation_folds_key_col.value_counts().plot(kind='bar', color='skyblue', edgecolor='black')
-        plt.title('Evaluation Fold key values frequency')
+        evaluation_fold_keys_frequency = evaluation_folds_key_col.value_counts()
+        evaluation_fold_keys_frequency.sort_index().plot(
+            kind='bar', color='skyblue', edgecolor='black',
+        )
+        plt.title(graph_title)
         plt.xlabel('Fold key')
         plt.xticks(rotation=45, ha='left')
         plt.ylabel('Frequency')
@@ -392,8 +433,17 @@ def _warnings_raised_display_text(warnings: list[ReportWarning]) -> str:
         return f'Yes ({len(warnings)} in total)'
 
 
+def _evaluation_folds_split_setup_display_text(evaluation_folds_split: EvaluationFoldsSplitSettings) -> str:
+    if evaluation_folds_split.key_column is not None:
+        return f"by the key column '{evaluation_folds_split.key_column}'"
+    elif evaluation_folds_split.folds_number is not None:
+        return 'random split'
+    else:
+        raise AssertionError('unknown evaluation folds split setup')
+
+
 def _display_folds_aggregation(result_aggregation: FoldsResultsAggregation) -> str:
-    return f'{round(result_aggregation.mean, 3)} (std: {round(result_aggregation.std, 3)})'
+    return f'mean: {round(result_aggregation.mean, 3)} (std: {round(result_aggregation.std, 3)})'
 
 
 def _style_df_cells_to_align_left(df: pd.DataFrame):
@@ -410,39 +460,5 @@ def _flat_nested_collection_by_one_level(nested_collection: Iterable) -> tuple:
     )
 
 
-if __name__ == '__main__':
-    import keras.optimizers.legacy
-    from bi_nitrogen_fertilization_ml_pipeline.assets.baseline_model import init_baseline_model
-    from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import \
-        EvaluationFoldsKeySettings, TrainEarlyStoppingSettings
-
-    pipeline_file_path_ = '/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/scratch_359_outputs3/train_pipeline_report/train_pipeline_report_dump.json'
-
-    output_report_html_file_path_ = Path('/Users/itaylotan/git/bi-nitrogen-fertilization-ml-pipeline/bi_nitrogen_fertilization_ml_pipeline/model_training/train_pipeline_report/tmp/dummy_report.html')
-    create_train_report(
-        report_data=TrainPipelineReportData.parse_file(pipeline_file_path_),
-        train_params=TrainParams(
-            model_builder=init_baseline_model,
-            epochs_count=100,
-            # epochs_count=5,
-            evaluation_folds_key=EvaluationFoldsKeySettings(
-                column='year',
-                values_mapper=lambda year_str: str(int(year_str.strip()) % 3),
-            ),
-            early_stopping=TrainEarlyStoppingSettings(
-                validation_set_fraction_size=0.2,
-                tolerance_epochs_count=9,
-                # tolerance_epochs_count=2,
-            ),
-            optimizer_builder=keras.optimizers.legacy.Adam,
-            random_seed=42,
-            silent_models_fitting=True,
-        ),
-        output_report_html_file_path=output_report_html_file_path_,
-    )
-
-    def _open_path_in_browser(file_path: str | Path):
-        import subprocess
-        subprocess.run(f"open -a 'google chrome' '{str(file_path)}'", shell=True)
-
-    _open_path_in_browser(output_report_html_file_path_)
+def _multi_line_text_as_html_block(text: str) -> dp.HTML:
+    return dp.HTML(f'<pre>{text}</pre>')
