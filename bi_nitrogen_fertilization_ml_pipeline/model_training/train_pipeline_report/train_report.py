@@ -39,20 +39,20 @@ def _build_pipeline_summary_page(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ) -> dp.Page:
-    training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
+    evaluation_folds = report_data.model_training.evaluation_folds
     preprocessed_dataset_shape = report_data.dataset_preprocessing.preprocessed_input_dataset.shape
 
     eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     summary_details = {
         f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
+            evaluation_folds.folds_results.aggregate_evaluation_set_folds_main_metric()),
         f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
+            evaluation_folds.folds_results.aggregate_train_set_folds_main_metric()),
         f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
+            evaluation_folds.folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'preprocessed dataset size':
             f'{preprocessed_dataset_shape[0]:,} rows, {preprocessed_dataset_shape[1]:,} columns',
-        'evaluation folds count': training_evaluation_folds_results.folds_count(),
+        'evaluation folds count': evaluation_folds.folds_results.folds_count(),
         'pipeline execution duration': _get_pipeline_execution_duration_display_text(
             report_data.pipeline_execution_time),
         'warnings raised': _warnings_raised_display_text(report_data.warnings),
@@ -177,22 +177,22 @@ def _build_model_evaluation_page(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ) -> dp.Page:
-    training_evaluation_folds_results = report_data.model_training.evaluation_folds_results
+    evaluation_folds = report_data.model_training.evaluation_folds
 
     eval_metric_display_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     page_details = {
         f'K fold model evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_evaluation_set_folds_main_metric()),
+            evaluation_folds.folds_results.aggregate_evaluation_set_folds_main_metric()),
         f'K fold model train sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_set_folds_main_metric()),
+            evaluation_folds.folds_results.aggregate_train_set_folds_main_metric()),
         f'guess (train set target mean) evaluation sets {eval_metric_display_name}': _display_folds_aggregation(
-            training_evaluation_folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
+            evaluation_folds.folds_results.aggregate_train_random_guess_on_evaluation_set_main_metric()),
         'loss function name': _get_evaluation_function_display_name(train_params.loss_function),
         'evaluation folds key column':
             f"{train_params.evaluation_folds_key.column}{' (mutated)' if train_params.evaluation_folds_key.values_mapper is not None else ''}",
-        'evaluation folds count': training_evaluation_folds_results.folds_count(),
+        'evaluation folds count': evaluation_folds.folds_results.folds_count(),
         'folds distribution GINI coefficient':
-            f'{report_data.model_training.evaluation_folds_distribution_gini_coefficient:.4f}'
+            f'{report_data.model_training.evaluation_folds.folds_distribution_gini_coefficient:.4f}'
     }
     page_details_table_df = pd.DataFrame(
         data=[dict(key=key, value=value) for key, value in page_details.items()]
@@ -202,9 +202,21 @@ def _build_model_evaluation_page(
         _get_evaluation_folds_key_frequencies_histogram(report_data)
 
     fold_train_models_page_items = _get_folds_models_train_page_items(report_data, train_params)
+
     model_evaluation_page = dp.Page(
         title="Model Evaluation",
         blocks=[
+            dp.Text('## Regression errors graph'),
+            dp.Text('### Deviations of fold models evaluation set predictions from true values'),
+            dp.Group(
+                dp.Attachment(
+                    file=evaluation_folds.folds_evaluation_set_y_true_and_pred_csv_path,
+                    caption='this file contains the data points that were used to produce the following graph',
+                ),
+                columns=2,
+            ),
+            dp.Media(evaluation_folds.folds_eval_set_prediction_deviations_graph_file),
+
             dp.Text('## Model evaluation details'),
             dp.Table(_style_df_cells_to_align_left(page_details_table_df)),
 
@@ -291,6 +303,7 @@ def _get_folds_models_train_page_items(
     report_data: TrainPipelineReportData,
     train_params: TrainParams,
 ):
+    evaluation_folds = report_data.model_training.evaluation_folds
     loss_function_name = _get_evaluation_function_display_name(train_params.loss_function)
     evaluation_metric_name = _get_evaluation_function_display_name(train_params.evaluation_metric)
     full_dataset_rows_count = report_data.dataset_preprocessing.preprocessed_input_dataset.shape[0]
@@ -309,15 +322,14 @@ def _get_folds_models_train_page_items(
             f'guess evaluation set loss ({loss_function_name})': fold_results.train_random_guess_on_evaluation_set_loss,
             f'guess evaluation set {evaluation_metric_name}': fold_results.train_random_guess_on_evaluation_set_main_metric,
         }
-        for fold_results in report_data.model_training.evaluation_folds_results.fold_results
+        for fold_results in evaluation_folds.folds_results.fold_results
     ]
     fold_evaluation_results_table_df =\
         pd.DataFrame(fold_evaluation_results_table_rows)\
         .sort_values(by=fold_key_table_col)\
         .round(3)
 
-    folds_train_figures_subfolders = \
-        report_data.model_training.evaluation_folds_train_figures_root_folder.iterdir()
+    folds_train_figures_root_folder = evaluation_folds.folds_train_figures_root_folder
     fold_train_figures_page_items = (
         (
             dp.Text(f"### {folder_path.name}"),
@@ -327,7 +339,7 @@ def _get_folds_models_train_page_items(
                 if folder_child_file.suffix in IMAGE_FILE_EXTENSIONS
             )
         )
-        for folder_path in folds_train_figures_subfolders
+        for folder_path in folds_train_figures_root_folder.iterdir()
     )
     fold_train_figures_page_items_flatted =\
         _flat_nested_collection_by_one_level(fold_train_figures_page_items)

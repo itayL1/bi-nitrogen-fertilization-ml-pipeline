@@ -13,6 +13,8 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_repo
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_session_context import TrainSessionContext
 from bi_nitrogen_fertilization_ml_pipeline.core.utils.statistical_tests import \
     values_distribution_gini_coefficient_test, DistributionBalance
+from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.evalution_folds_plots import \
+    plot_folds_eval_sets_prediction_deviations_graph
 from bi_nitrogen_fertilization_ml_pipeline.model_training.evaluation.random_guess_predictions import \
     calculate_evaluation_metric_for_random_guess_predictions
 from bi_nitrogen_fertilization_ml_pipeline.model_training.training.model_setup import prepare_new_model_for_training
@@ -27,22 +29,33 @@ def key_based_k_fold_cross_validation(
     _population_report_with_k_fold_evaluation_stats(preprocessed_train_dataset, session_context)
 
     folds_train_figures_folder = session_context.wip_outputs_folder_path / 'folds_train_figures'
+    folds_evaluation_set_y_true_and_pred_csv_path =\
+        session_context.wip_outputs_folder_path / 'folds_evaluation_set_y_true_and_pred.csv'
     model_input_features_count = preprocessed_train_dataset.get_train_features_count()
 
     folds_results = []
+    folds_eval_set_y_true_and_pred_dfs = []
     with _folds_display_progress_bar(preprocessed_train_dataset, session_context) as advance_pbar:
         for fold_split in _split_dataset_to_folds_based_on_key_col(preprocessed_train_dataset):
             fold_key = fold_split.fold_key
             fold_train_output_figures_folder = _setup_fold_train_output_figures_folder(
                 fold_key, folds_train_figures_folder, session_context)
-            fold_results = _run_fold_iteration(
+            fold_results, fold_eval_set_y_true_and_pred_df = _run_fold_iteration(
                 fold_split, model_input_features_count, fold_train_output_figures_folder, session_context,
             )
             folds_results.append(fold_results)
+            folds_eval_set_y_true_and_pred_dfs.append(fold_eval_set_y_true_and_pred_df)
             advance_pbar()
 
+    folds_eval_set_y_true_and_pred_df = pd.concat(folds_eval_set_y_true_and_pred_dfs)
+    folds_eval_set_prediction_deviations_graph_path = plot_folds_eval_sets_prediction_deviations_graph(
+        folds_eval_set_y_true_and_pred_df, session_context)
+    folds_eval_set_y_true_and_pred_df.to_csv(
+        folds_evaluation_set_y_true_and_pred_csv_path, index_label='sample_id')
     _populate_report_with_k_fold_evaluation_results(
-        folds_results, folds_train_figures_folder, session_context)
+        folds_results, folds_train_figures_folder, folds_evaluation_set_y_true_and_pred_csv_path,
+        folds_eval_set_prediction_deviations_graph_path, session_context,
+    )
 
 
 def _calc_folds_count(preprocessed_train_dataset: PreprocessedTrainDataset) -> int:
@@ -75,7 +88,7 @@ def _population_report_with_k_fold_evaluation_stats(
         )
 
     eval_folds_gini_test_res = values_distribution_gini_coefficient_test(evaluation_folds_key_col)
-    pipeline_report.model_training.evaluation_folds_distribution_gini_coefficient = eval_folds_gini_test_res.gini_coefficient
+    pipeline_report.model_training.evaluation_folds.folds_distribution_gini_coefficient = eval_folds_gini_test_res.gini_coefficient
     if eval_folds_gini_test_res.distribution_balance != DistributionBalance.relatively_balanced:
         pipeline_report.add_warning(
             WarningPipelineModules.model_training,
@@ -147,7 +160,7 @@ def _run_fold_iteration(
     model_input_features_count: int,
     train_output_figures_folder: Path,
     session_context: TrainSessionContext,
-) -> FoldModelEvaluationResults:
+) -> tuple[FoldModelEvaluationResults, pd.DataFrame]:
     fold_model = prepare_new_model_for_training(
         session_context.params, model_input_features_count)
     train_history = train_model(
@@ -159,7 +172,14 @@ def _run_fold_iteration(
     )
     fold_results = _evaluate_fold_model(
         fold_model, fold_split, train_history, session_context)
-    return fold_results
+
+    # todo - make sure indices match
+    fold_model_y_pred = _get_model_predictions(fold_model, X=fold_split.X_evaluation)
+    fold_evaluation_set_y_true_and_pred_df = pd.DataFrame(data=dict(
+        y_true=fold_split.y_evaluation, fold_model_y_pred=fold_model_y_pred,
+    ))
+    fold_evaluation_set_y_true_and_pred_df.insert(0, 'fold_key', fold_split.fold_key)
+    return fold_results, fold_evaluation_set_y_true_and_pred_df
 
 
 def _evaluate_fold_model(
@@ -216,11 +236,22 @@ def _extract_evaluation_metric_names(fold_model: Model) -> tuple[str, str]:
         raise ValueError('could not extract the evaluation metric names')
 
 
+def _get_model_predictions(fold_model: Model, X: pd.DataFrame) -> pd.Series:
+    ordered_predictions_array = fold_model.predict(X, verbose=0)
+    y_pred = pd.Series(ordered_predictions_array.flatten(), index=X.index)
+    return y_pred
+
+
 def _populate_report_with_k_fold_evaluation_results(
     folds_results: list[FoldModelEvaluationResults],
     folds_train_figures_folder: Path,
+    folds_evaluation_set_y_true_and_pred_csv_path: Path,
+    folds_eval_set_prediction_deviations_graph_path: Path,
     session_context: TrainSessionContext,
 ) -> None:
-    model_training = session_context.pipeline_report.model_training
-    model_training.evaluation_folds_results = KFoldCrossValidationResults(fold_results=folds_results)
-    model_training.evaluation_folds_train_figures_root_folder = folds_train_figures_folder
+    evaluation_folds = session_context.pipeline_report.model_training.evaluation_folds
+
+    evaluation_folds.folds_results = KFoldCrossValidationResults(fold_results=folds_results)
+    evaluation_folds.folds_train_figures_root_folder = folds_train_figures_folder
+    evaluation_folds.folds_evaluation_set_y_true_and_pred_csv_path = folds_evaluation_set_y_true_and_pred_csv_path
+    evaluation_folds.folds_eval_set_prediction_deviations_graph_file = folds_eval_set_prediction_deviations_graph_path

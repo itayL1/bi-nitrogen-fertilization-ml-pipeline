@@ -30,7 +30,7 @@ def create_and_save_train_pipeline_report(
 
     report_asserts_folder = report_output_root_folder / 'assets'
     report_asserts_folder.mkdir(parents=False, exist_ok=False)
-    report_data.model_training.evaluation_folds_train_figures_root_folder.rename(
-        report_asserts_folder / report_data.model_training.evaluation_folds_train_figures_root_folder.name)
+    report_data.model_training.evaluation_folds.folds_train_figures_root_folder.rename(
+        report_asserts_folder / report_data.model_training.evaluation_folds.folds_train_figures_root_folder.name)
     report_data.model_training.final_model.train_figures_folder.rename(
         report_asserts_folder / report_data.model_training.final_model.train_figures_folder.name)
