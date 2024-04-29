@@ -35,6 +35,18 @@ class TrainPipelineMainProgressBarManager:
         self._rich_progress.update(
             self._train_pipeline_progress_task_id, description=current_step_description)
 
+    def move_to_completed(self):
+        unused_steps = set(TrainPipelineLogicalSteps) - set(self._used_steps)
+        assert not any(unused_steps),\
+            f'not all the steps were used before move_to_completed() was called, ' \
+            f'this is unexpected (unused steps: {unused_steps})'
+
+        print(self._get_step_finished_display_message(self._current_step))
+        self._rich_progress.update(
+            self._train_pipeline_progress_task_id,
+            advance=1, description='',
+        )
+
     @classmethod
     def _create_train_pipeline_progress_task(cls, rich_progress: Progress):
         total_steps_count = len(TrainPipelineLogicalSteps)
@@ -75,5 +87,4 @@ class TrainPipelineMainProgressBarManager:
         else:
             raise NotImplementedError(f"unknown pipeline step - {pipeline_step}")
 
-        final_description = f'** {step_finished_message.capitalize()} **'
-        return final_description
+        return f'✓ {step_finished_message.capitalize()}'

@@ -12,6 +12,7 @@ from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_params import
     EvaluationFoldsSplitSettings
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_report import TrainPipelineReportData, \
     PipelineExecutionTime, ReportWarning, ImputationFunnel, WarningPipelineModules
+from bi_nitrogen_fertilization_ml_pipeline.core.utils.program_io import suppress_stdout
 
 IMAGE_FILE_EXTENSIONS = ('.jpeg', 'jpg', '.png')
 
@@ -33,7 +34,8 @@ def create_final_train_pipeline_report(
         _build_warnings_page(report_data),
     )
 
-    report.save(str(output_report_html_file_path), open=False)
+    with suppress_stdout():
+        report.save(str(output_report_html_file_path), open=False)
 
 
 def _build_pipeline_summary_page(
