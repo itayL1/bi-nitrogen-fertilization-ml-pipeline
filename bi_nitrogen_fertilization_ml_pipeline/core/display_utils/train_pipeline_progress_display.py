@@ -1,3 +1,5 @@
+from time import sleep
+
 from rich.progress import Progress
 
 from bi_nitrogen_fertilization_ml_pipeline.core.data_classes.train_pipeline_logical_steps import \
@@ -46,6 +48,9 @@ class TrainPipelineMainProgressBarManager:
             self._train_pipeline_progress_task_id,
             advance=1, description='',
         )
+
+        # to ensure that the stdout flushes
+        sleep(0.1)
 
     @classmethod
     def _create_train_pipeline_progress_task(cls, rich_progress: Progress):
