@@ -22,11 +22,11 @@ datapane = "^0.17.0"
 ydata-profiling = "4.0.0"
 numba = "0.56.2"
 humanize = "^4.9.0"
-jupyter = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
 faker = "^23.3.0"
+jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]

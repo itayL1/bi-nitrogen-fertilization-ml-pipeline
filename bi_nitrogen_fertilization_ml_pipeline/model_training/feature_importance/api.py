@@ -24,7 +24,8 @@ def extract_feature_importance_using_shap(
     shap_masker = shap.maskers.Independent(data=X)
     shap_explainer = shap.Explainer(model, masker=shap_masker, feature_names=X.columns.tolist(), seed=random_seed)
 
-    X_sample = X.sample(n=IMPORTANCE_EXTRACTION_SAMPLE_SIZE, random_state=random_seed)
+    sample_size = min(IMPORTANCE_EXTRACTION_SAMPLE_SIZE, X.shape[0])
+    X_sample = X.sample(n=sample_size, random_state=random_seed)
     model_shap_values = shap_explainer(X_sample, silent=not show_progress_bar)
     try:
         shap.summary_plot(model_shap_values, feature_names=X.columns.tolist(), show=False)

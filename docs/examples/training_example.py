@@ -1,4 +1,5 @@
 # ** Imports **
+from pathlib import Path
 
 import pandas as pd
 import keras.optimizers.legacy
@@ -10,11 +11,10 @@ from bi_nitrogen_fertilization_ml_pipeline.assets import init_baseline_model
 
 # Load dataset
 
-TRAIN_DATASET_FILE_PATH = '/Users/itaylotan/Downloads/Cutted_Hizuy_with_met_50percent.xlsx - Sheet1.csv'
+TRAIN_DATASET_FILE_PATH = Path(__file__).parent / 'datasets/sample_dataset.csv'
 
 column_dtypes = {
     'N kg/d': float,
-    'משק': str,
     'עומק': float,
     'קוד  קרקע': str,
     'Krab_key_eng': str,
@@ -26,15 +26,15 @@ train_dataset_df = pd.read_csv(
     TRAIN_DATASET_FILE_PATH, low_memory=False, dtype=column_dtypes,
 )
 
-# Configuration definition¶
+# Configuration definition
 
 features_config = {
     'target_column': 'N kg/d',
     'features': [
-        {
-            'column': 'משק',
-            'kind': 'categorical',
-        },
+        # {
+        #     'column': 'משק',
+        #     'kind': 'categorical',
+        # },
         {
             'column': 'עומק',
             'kind': 'numeric',
@@ -87,7 +87,7 @@ train_params = dict(
 
 # ** Train and evaluate model **
 
-OUTPUT_MODEL_FILE_PATH = '/Users/itaylotan/Desktop/bi_nitrogen_fertilization_ml_pipeline/pipeline_outputs/model.zip'
+OUTPUT_MODEL_FILE_PATH = str(Path(__file__).parent / 'trained_model/model.zip')
 
 train_and_evaluate_model(
     raw_train_dataset_df=train_dataset_df,

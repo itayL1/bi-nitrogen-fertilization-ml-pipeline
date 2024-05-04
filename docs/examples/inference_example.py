@@ -1,4 +1,5 @@
 # ** Imports **
+from pathlib import Path
 
 import pandas as pd
 
@@ -6,7 +7,7 @@ from bi_nitrogen_fertilization_ml_pipeline.main_api import predict_using_trained
 
 # Load inference dataset
 
-INFERENCE_DATASET_FILE_PATH = '/Users/itaylotan/Downloads/Cutted_Hizuy_with_met_50percent.xlsx - Sheet1.csv'
+INFERENCE_DATASET_FILE_PATH = Path(__file__).parent / 'datasets/sample_dataset.csv'
 
 column_dtypes = {
     'משק': str,
@@ -23,13 +24,13 @@ inference_dataset_df = pd.read_csv(
 
 # ** Get model predictions **
 
-TRAINED_MODEL_FILE_PATH = '/Users/itaylotan/Desktop/bi_nitrogen_fertilization_ml_pipeline/pipeline_outputs/model.zip'
+TRAINED_MODEL_FILE_PATH = str(Path(__file__).parent / 'trained_model/model.zip')
 
 y_pred = predict_using_trained_model(inference_dataset_df, TRAINED_MODEL_FILE_PATH)
 
 # ** Optional - Save the inference dataset with the model predictions to a csv file **
 
-OUTPUT_CSV_FILE_PATH = '/Users/itaylotan/Desktop/bi_nitrogen_fertilization_ml_pipeline/temp/inference_dataset_with_predictions.csv'
+OUTPUT_CSV_FILE_PATH = '/tmp/inference_dataset_with_predictions.csv'
 
 inference_dataset_with_predictions_df = inference_dataset_df.copy()
 inference_dataset_with_predictions_df['model_prediction'] = y_pred
