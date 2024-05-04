@@ -18,39 +18,20 @@ def plot_folds_eval_sets_prediction_deviations_graph(
         session_context.wip_outputs_folder_path / 'folds_eval_sets_prediction_deviations.jpeg'
 
     folds_eval_set_y_true_and_pred_df.sort_values(by='fold_key', inplace=True)
-    samples_count = folds_eval_set_y_true_and_pred_df.shape[0]
     y_true_array = folds_eval_set_y_true_and_pred_df['y_true'].to_numpy()
     fold_model_y_pred_array = folds_eval_set_y_true_and_pred_df['fold_model_y_pred'].to_numpy()
-    folds_eval_set_prediction_deviations = fold_model_y_pred_array - y_true_array
+    y_folds_eval_set_prediction_deviations = fold_model_y_pred_array - y_true_array
+    x_sample_indices = range(len(y_folds_eval_set_prediction_deviations))
 
-    try_ratio = (y_true_array.std() * 5) / samples_count
-
-    fig, (ax1, ax2) = plt.subplots(
-        nrows=2, figsize=SQUARE_FIGURES_SIZE, constrained_layout=True,
-    )
+    fig, ax = plt.subplots(figsize=SQUARE_FIGURES_SIZE, constrained_layout=True)
     try:
         fig.set_dpi(SAVE_FIGURES_DPI)
 
-        zero_deviations_line_x = np.array(range(len(folds_eval_set_prediction_deviations)))
-        zero_deviations_line_y = zero_deviations_line_x * try_ratio
-
-        actual_deviations_scatter_x = zero_deviations_line_x
-        actual_deviations_scatter_y = zero_deviations_line_y + folds_eval_set_prediction_deviations
-
-        ax1.plot(zero_deviations_line_x, zero_deviations_line_y, color='black', linewidth=1, label='Zero deviation')
-        ax1.scatter(actual_deviations_scatter_x, actual_deviations_scatter_y, color='blue', label='Deviations')
-        ax1.set_xlabel('Sample Index (sorted by evaluation folds)')
-        ax1.set_ylabel('Prediction Deviation')
-        ax1.set_title('Option 1')
-        ax1.legend()
-
-        ax2.axhline(0, color='black', linewidth=1, label='Zero deviation')
-        ax2.scatter(range(len(folds_eval_set_prediction_deviations)), folds_eval_set_prediction_deviations, color='blue', label='Deviations')
-        ax2.set_xlabel('Sample Index (sorted by evaluation folds)')
-        ax2.set_ylabel('Prediction Deviation')
-        ax2.set_title('Option 2')
-        ax2.legend()
-        # ax2.grid(True)
+        ax.axhline(0, color='black', linewidth=1, label='Zero deviation')
+        ax.scatter(x_sample_indices, y_folds_eval_set_prediction_deviations, color='blue', label='Deviations')
+        ax.set_xlabel('Sample Index (sorted by evaluation folds)')
+        ax.set_ylabel('Prediction Deviation')
+        ax.legend()
 
         fig.savefig(str(folds_eval_sets_prediction_deviations_graph_path))
     finally:

@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -339,6 +340,9 @@ def _get_folds_models_train_page_items(
         .sort_values(by=fold_id_table_col)\
         .round(3)
 
+    temp_fold_evaluation_results_csv_file_path = tempfile.mktemp()
+    fold_evaluation_results_table_df.to_csv(temp_fold_evaluation_results_csv_file_path, index=False)
+
     folds_train_figures_root_folder = evaluation_folds.folds_train_figures_root_folder
     fold_train_figures_page_items = (
         (
@@ -357,6 +361,10 @@ def _get_folds_models_train_page_items(
     return (
         dp.Text('## Fold models evaluation results and train graphs'),
         dp.Table(fold_evaluation_results_table_df),
+        dp.Attachment(file=temp_fold_evaluation_results_csv_file_path,
+                      filename='fold_evaluation_results.csv',
+                      caption='download the table above as CSV'),
+
         *fold_train_figures_page_items_flatted
     )
 
@@ -424,6 +432,10 @@ def _get_evaluation_function_display_name(eval_func: EvaluationFunctions) -> str
         return 'MSE'
     elif eval_func is EvaluationFunctions.rmse:
         return 'RMSE'
+    elif eval_func is EvaluationFunctions.mae:
+        return 'MAE'
+    elif eval_func is EvaluationFunctions.huber_loss:
+        return 'Huber'
     else:
         raise NotImplementedError(f"unknown evaluation function: '{eval_func}'")
 

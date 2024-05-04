@@ -38,11 +38,11 @@ def _calc_gini_coefficient(series: pd.Series) -> float:
 
 
 def _determine_distribution_balance(gini_coefficient: float) -> DistributionBalance:
-    if 0.0 <= gini_coefficient < 0.2:
+    if 0.0 <= gini_coefficient < 0.5:
         return DistributionBalance.relatively_balanced
-    elif 0.2 <= gini_coefficient < 0.4:
+    elif 0.5 <= gini_coefficient < 0.75:
         return DistributionBalance.moderately_imbalanced
-    elif 0.4 <= gini_coefficient < 1.0:
+    elif 0.75 <= gini_coefficient < 1.0:
         return DistributionBalance.highly_imbalanced
     else:
         return DistributionBalance.unknown
