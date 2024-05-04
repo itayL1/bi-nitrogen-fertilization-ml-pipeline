@@ -31,7 +31,7 @@ class TrainParams(BaseModel):
     model_builder: Callable[[int], keras.Model]
     loss_function: EvaluationFunctions = Field(default=defaults.LOSS_FUNCTION)
     evaluation_metric: EvaluationFunctions = Field(default=defaults.EVALUATION_METRIC)
-    optimizer_builder: Callable[[], Optimizer] = Field(default=defaults.ADAM_OPTIMIZER)
+    optimizer_builder: Callable[[], Optimizer]
     epochs_count: int
     early_stopping: Optional[TrainEarlyStoppingSettings]
     evaluation_folds_split: EvaluationFoldsSplitSettings
