@@ -151,3 +151,4 @@ def _move_relevant_wip_files_to_output_paths(
 def _print_pipeline_finished_successfully_message() -> None:
     console = Console()
     console.print('[bright_green]The pipeline has concluded without any issues[/bright_green]')
+
